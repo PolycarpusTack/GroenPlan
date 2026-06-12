@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, Search } from "lucide-react";
+import { CalendarDays, Search, Download } from "lucide-react";
 import { useTuinStore } from "../store/tuin-store";
 import { Button } from "../components/ui";
+import { bloeiKalenderCsv } from "../services/export/bloeikalender-csv";
 
 const MAANDEN = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
 const MAAND_LANG = ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
@@ -51,6 +52,7 @@ export function BloemKalenderPagina() {
   const tuin = useTuinStore((s) => s.tuin);
   const plantCatalog = useTuinStore((s) => s.plantCatalog);
   const [geselecteerdeZoneId, setGeselecteerdeZoneId] = useState("");
+  const [alleenBijen, setAlleenBijen] = useState(false);
 
   const rijen = useMemo<BloemRij[]>(() => {
     const map = new Map<string, BloemRij>();
@@ -63,6 +65,7 @@ export function BloemKalenderPagina() {
         const sleutel = plaatsing.wetenschappelijkeNaam.toLowerCase();
         const plant = plantCatalog[sleutel];
         if (!plant) continue;
+        if (alleenBijen && !plant.ecologie.bestuivers.waarde.includes("bees")) continue;
         if (!map.has(sleutel)) {
           map.set(sleutel, {
             wetNaam: plant.identificatie.wetenschappelijkeNaam,
@@ -80,7 +83,17 @@ export function BloemKalenderPagina() {
     return Array.from(map.values()).sort((a, b) =>
       (a.gewoneNaam ?? a.wetNaam).localeCompare(b.gewoneNaam ?? b.wetNaam, "nl"),
     );
-  }, [tuin.zones, plantCatalog, geselecteerdeZoneId]);
+  }, [tuin.zones, plantCatalog, geselecteerdeZoneId, alleenBijen]);
+
+  const exporteerCsv = () => {
+    const blob = new Blob([bloeiKalenderCsv(rijen)], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `bloeikalender-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const bloeiendPerMaand = useMemo(() => {
     const telling = new Array(12).fill(0) as number[];
@@ -126,10 +139,22 @@ export function BloemKalenderPagina() {
 
   return (
     <div className="p-6 md:p-8 max-w-5xl">
-      <h1 className="font-display text-display-md text-moss-900 mb-1">Bloeikalender</h1>
-      <p className="text-body text-moss-500 mb-6">
-        Overzicht van alle bloeiperiodes — plan voor continue bloei het hele jaar.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
+        <div>
+          <h1 className="font-display text-display-md text-moss-900 mb-1">Bloeikalender</h1>
+          <p className="text-body text-moss-500">
+            Overzicht van alle bloeiperiodes — plan voor continue bloei het hele jaar.
+          </p>
+        </div>
+        <Button
+          variant="secondary"
+          onClick={exporteerCsv}
+          disabled={rijen.length === 0}
+          className="flex items-center gap-2 disabled:opacity-50"
+        >
+          <Download size={14} aria-hidden /> Export CSV
+        </Button>
+      </div>
 
       {/* 4 Stat-kaarten */}
       {rijen.length > 0 && (
@@ -189,11 +214,23 @@ export function BloemKalenderPagina() {
             {z.naam}
           </button>
         ))}
+        <span className="w-px h-5 bg-[var(--gp-border)] self-center mx-1" aria-hidden />
+        <button
+          onClick={() => setAlleenBijen((v) => !v)}
+          aria-pressed={alleenBijen}
+          className={`text-caption px-3 py-1 rounded-full border transition-colors ${
+            alleenBijen
+              ? "bg-amber-500 text-white border-amber-500"
+              : "border-[var(--gp-border)] text-[var(--gp-text-mute)] hover:border-amber-400"
+          }`}
+        >
+          🐝 Alleen bijenplanten
+        </button>
       </div>
 
       {rijen.length === 0 ? (
         <p className="text-body text-[var(--gp-text-mute)] py-8 text-center">
-          Geen planten in deze zone.
+          {alleenBijen ? "Geen bijenplanten in deze selectie." : "Geen planten in deze zone."}
         </p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-[var(--gp-border)]">
