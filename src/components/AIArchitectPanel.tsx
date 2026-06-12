@@ -13,6 +13,7 @@ import type { AutoFillResultaat } from "../domain/plant/types";
 import { Button } from "./ui";
 import type { TuinOntwerpSuggestie, TuinOntwerpVoorstel } from "../services/tuinontwerp/types";
 import { schatKosten } from "../services/tuinontwerp/kosten";
+import { VoorstelCanvas } from "./VoorstelCanvas";
 
 interface Props {
   zone: Zone;
@@ -68,7 +69,15 @@ function MetriekenBalk({ metrics, aantalPlanten }: { metrics: TuinOntwerpVoorste
   );
 }
 
-function VoorstelKaart({ voorstel, index, totaal }: { voorstel: TuinOntwerpVoorstel; index: number; totaal: number }) {
+function VoorstelKaart({
+  voorstel, index, totaal, plantCatalog, zone,
+}: {
+  voorstel: TuinOntwerpVoorstel;
+  index: number;
+  totaal: number;
+  plantCatalog: Record<string, AutoFillResultaat>;
+  zone: Zone;
+}) {
   return (
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-2">
@@ -81,6 +90,14 @@ function VoorstelKaart({ voorstel, index, totaal }: { voorstel: TuinOntwerpVoors
       </div>
 
       <p className="text-body-sm text-moss-700">{voorstel.beschrijving}</p>
+
+      {/* Ruimtelijke preview (indicatieve auto-plaatsing op hoogte) */}
+      <VoorstelCanvas
+        soorten={voorstel.plantenLijst}
+        catalog={plantCatalog}
+        zoneBreedteM={zone.breedte_m}
+        zoneDiepteM={zone.diepte_m}
+      />
 
       {/* Plantenlijst */}
       <div>
@@ -248,7 +265,7 @@ export function AIArchitectPanel({ zone, plantCatalog, hardheid }: Props) {
         {/* Voorstellen */}
         {voorstellen && voorstellen.length > 0 && (
           <>
-            <VoorstelKaart voorstel={voorstellen[actief]} index={actief} totaal={totaal} />
+            <VoorstelKaart voorstel={voorstellen[actief]} index={actief} totaal={totaal} plantCatalog={plantCatalog} zone={zone} />
 
             {/* Paginering */}
             <div className="flex items-center justify-between pt-2 border-t border-[var(--gp-border)]">
