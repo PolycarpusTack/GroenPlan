@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { Tuin, PlantPlaatsing, ZoneInput } from "../domain/tuin/types";
+import type { Tuin, PlantPlaatsing, PlantGezondheid, ZoneInput } from "../domain/tuin/types";
 import type { AutoFillResultaat } from "../domain/plant/types";
 import {
   voegZoneToe,
@@ -13,6 +13,8 @@ import {
   verwijderBorder as domeinVerwijderBorder,
   verplaatsNaarBorder as domeinVerplaatsNaarBorder,
   setPlantNotitie as domeinSetPlantNotitie,
+  setPlantPositie as domeinSetPlantPositie,
+  setPlantGezondheid as domeinSetPlantGezondheid,
 } from "../domain/tuin/tuin";
 
 const STANDAARD_TUIN: Tuin = {
@@ -51,6 +53,10 @@ interface TuinStore {
 
   // Notities
   setPlantNotitie: (zoneId: string, plaatsingId: string, notitie: string | null) => void;
+
+  // Positie & gezondheid (Zone Designer)
+  setPlantPositie: (zoneId: string, plaatsingId: string, x_m: number | null, y_m: number | null) => void;
+  setPlantGezondheid: (zoneId: string, plaatsingId: string, gezondheid: PlantGezondheid | null) => void;
 
   // Catalogus
   voegPlantToeAanCatalogus: (plant: AutoFillResultaat) => void;
@@ -103,6 +109,9 @@ export const useTuinStore = create<TuinStore>()(
             geplaatst: new Date(),
             borderId: borderId ?? null,
             notitie: null,
+            x_m: null,
+            y_m: null,
+            gezondheid: null,
           };
           return {
             tuin: plaatsPlant(staat.tuin, zoneId, plaatsing),
@@ -147,6 +156,16 @@ export const useTuinStore = create<TuinStore>()(
           tuin: domeinSetPlantNotitie(staat.tuin, zoneId, plaatsingId, notitie),
         })),
 
+      setPlantPositie: (zoneId, plaatsingId, x_m, y_m) =>
+        set((staat) => ({
+          tuin: domeinSetPlantPositie(staat.tuin, zoneId, plaatsingId, x_m, y_m),
+        })),
+
+      setPlantGezondheid: (zoneId, plaatsingId, gezondheid) =>
+        set((staat) => ({
+          tuin: domeinSetPlantGezondheid(staat.tuin, zoneId, plaatsingId, gezondheid),
+        })),
+
       voegPlantToeAanCatalogus: (plant) =>
         set((staat) => ({
           plantCatalog: {
@@ -186,11 +205,16 @@ export const useTuinStore = create<TuinStore>()(
               borders: z.borders ?? [],
               gemeente: z.gemeente ?? null,
               regenval_mm_7d: z.regenval_mm_7d ?? null,
+              breedte_m: z.breedte_m ?? null,
+              diepte_m: z.diepte_m ?? null,
               plantPlaatsingen: z.plantPlaatsingen.map((p) => ({
                 ...p,
                 geplaatst: new Date(p.geplaatst),
                 borderId: p.borderId ?? null,
                 notitie: p.notitie ?? null,
+                x_m: p.x_m ?? null,
+                y_m: p.y_m ?? null,
+                gezondheid: p.gezondheid ?? null,
               })),
             })),
           },
@@ -209,10 +233,15 @@ export const useTuinStore = create<TuinStore>()(
             z.borders = z.borders ?? [];
             z.gemeente = z.gemeente ?? null;
             z.regenval_mm_7d = z.regenval_mm_7d ?? null;
+            z.breedte_m = z.breedte_m ?? null;
+            z.diepte_m = z.diepte_m ?? null;
             z.plantPlaatsingen.forEach((p) => {
               p.geplaatst = new Date(p.geplaatst);
               p.borderId = p.borderId ?? null;
               p.notitie = p.notitie ?? null;
+              p.x_m = p.x_m ?? null;
+              p.y_m = p.y_m ?? null;
+              p.gezondheid = p.gezondheid ?? null;
             });
           });
         }

@@ -14,6 +14,8 @@ const zoneA = {
   drainage: "well-drained" as const,
   gemeente: null,
   regenval_mm_7d: null,
+  breedte_m: null,
+  diepte_m: null,
 };
 
 function renderRoute(pad: string) {

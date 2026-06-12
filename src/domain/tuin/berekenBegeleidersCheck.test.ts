@@ -4,7 +4,7 @@ import type { PlantPlaatsing } from "./types";
 import type { AutoFillResultaat } from "../plant/types";
 
 function maakPlaatsing(naam: string): PlantPlaatsing {
-  return { id: naam, plantSoortId: `ps-${naam}`, wetenschappelijkeNaam: naam, geplaatst: new Date("2026-01-01"), borderId: null, notitie: null };
+  return { id: naam, plantSoortId: `ps-${naam}`, wetenschappelijkeNaam: naam, geplaatst: new Date("2026-01-01"), borderId: null, notitie: null, x_m: null, y_m: null, gezondheid: null };
 }
 
 function maakPlant(

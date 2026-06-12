@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   voegZoneToe, verwijderZone, updateZone, plaatsPlant, verwijderPlant, bloeiMaandenVanZone,
   voegBorderToe, hernoemBorder, verwijderBorder, verplaatsNaarBorder, setPlantNotitie,
+  setPlantPositie, setPlantGezondheid,
 } from "./tuin";
 import type { Tuin, PlantPlaatsing } from "./types";
 
@@ -23,10 +24,12 @@ const zoneA = {
   drainage: "well-drained" as const,
   gemeente: null,
   regenval_mm_7d: null,
+  breedte_m: null,
+  diepte_m: null,
 };
 
 function maakPlaatsing(id: string, borderId: string | null = null): PlantPlaatsing {
-  return { id, plantSoortId: `ps-${id}`, wetenschappelijkeNaam: `Plant ${id}`, geplaatst: new Date(), borderId, notitie: null };
+  return { id, plantSoortId: `ps-${id}`, wetenschappelijkeNaam: `Plant ${id}`, geplaatst: new Date(), borderId, notitie: null, x_m: null, y_m: null, gezondheid: null };
 }
 
 describe("voegZoneToe", () => {
@@ -189,5 +192,48 @@ describe("invarianten: commando's falen expliciet bij onbekende doel-id's", () =
 
   it("setPlantNotitie gooit bij onbekende plant", () => {
     expect(() => setPlantNotitie(tuinMetZone, "zone-a", "bestaat-niet", "test")).toThrow();
+  });
+});
+
+describe("setPlantPositie", () => {
+  const tuinMetPlant = plaatsPlant(voegZoneToe(leegeTuin, zoneA), "zone-a", maakPlaatsing("p1"));
+
+  it("zet x_m/y_m op de plaatsing", () => {
+    const t = setPlantPositie(tuinMetPlant, "zone-a", "p1", 2.5, 1.25);
+    const p = t.zones[0].plantPlaatsingen[0];
+    expect(p.x_m).toBe(2.5);
+    expect(p.y_m).toBe(1.25);
+  });
+
+  it("kan de positie terug wissen met null/null", () => {
+    const geplaatst = setPlantPositie(tuinMetPlant, "zone-a", "p1", 2, 2);
+    const gewist = setPlantPositie(geplaatst, "zone-a", "p1", null, null);
+    expect(gewist.zones[0].plantPlaatsingen[0].x_m).toBeNull();
+    expect(gewist.zones[0].plantPlaatsingen[0].y_m).toBeNull();
+  });
+
+  it("gooit bij half-ingevulde of negatieve coördinaten", () => {
+    expect(() => setPlantPositie(tuinMetPlant, "zone-a", "p1", 2, null)).toThrow();
+    expect(() => setPlantPositie(tuinMetPlant, "zone-a", "p1", -1, 0)).toThrow();
+  });
+
+  it("gooit bij onbekende zone of plant", () => {
+    expect(() => setPlantPositie(tuinMetPlant, "bestaat-niet", "p1", 1, 1)).toThrow();
+    expect(() => setPlantPositie(tuinMetPlant, "zone-a", "bestaat-niet", 1, 1)).toThrow();
+  });
+});
+
+describe("setPlantGezondheid", () => {
+  const tuinMetPlant = plaatsPlant(voegZoneToe(leegeTuin, zoneA), "zone-a", maakPlaatsing("p1"));
+
+  it("zet en wist de gezondheid", () => {
+    const ziek = setPlantGezondheid(tuinMetPlant, "zone-a", "p1", "zorgwekkend");
+    expect(ziek.zones[0].plantPlaatsingen[0].gezondheid).toBe("zorgwekkend");
+    const gewist = setPlantGezondheid(ziek, "zone-a", "p1", null);
+    expect(gewist.zones[0].plantPlaatsingen[0].gezondheid).toBeNull();
+  });
+
+  it("gooit bij onbekende plant", () => {
+    expect(() => setPlantGezondheid(tuinMetPlant, "zone-a", "bestaat-niet", "gezond")).toThrow();
   });
 });

@@ -42,6 +42,8 @@ export function ZoneFormulier({ bestaandeZone, onOpslaan, onAnnuleer }: Props) {
   const [drainage, setDrainage] = useState<Drainage>(bestaandeZone?.drainage ?? "well-drained");
   const [gemeente, setGemeente] = useState<string>(bestaandeZone?.gemeente ?? "");
   const [regenval, setRegenval] = useState<number | null>(bestaandeZone?.regenval_mm_7d ?? null);
+  const [breedte, setBreedte] = useState<string>(bestaandeZone?.breedte_m != null ? String(bestaandeZone.breedte_m) : "");
+  const [diepte, setDiepte] = useState<string>(bestaandeZone?.diepte_m != null ? String(bestaandeZone.diepte_m) : "");
   const [laadtNeerslag, setLaadtNeerslag] = useState(false);
   const [fout, setFout] = useState<string | null>(null);
 
@@ -74,6 +76,14 @@ export function ZoneFormulier({ bestaandeZone, onOpslaan, onAnnuleer }: Props) {
       setFout("pH moet tussen 3 en 10 liggen.");
       return;
     }
+    const breedteWaarde = breedte === "" ? null : parseFloat(breedte);
+    const diepteWaarde = diepte === "" ? null : parseFloat(diepte);
+    for (const w of [breedteWaarde, diepteWaarde]) {
+      if (w !== null && (isNaN(w) || w <= 0 || w > 500)) {
+        setFout("Afmetingen moeten tussen 0 en 500 meter liggen.");
+        return;
+      }
+    }
 
     onOpslaan({
       id: bestaandeZone?.id ?? crypto.randomUUID(),
@@ -84,6 +94,8 @@ export function ZoneFormulier({ bestaandeZone, onOpslaan, onAnnuleer }: Props) {
       drainage,
       gemeente: gemeente || null,
       regenval_mm_7d: regenval,
+      breedte_m: breedteWaarde,
+      diepte_m: diepteWaarde,
     });
   };
 
@@ -180,6 +192,40 @@ export function ZoneFormulier({ bestaandeZone, onOpslaan, onAnnuleer }: Props) {
                        focus:outline-none focus:shadow-[var(--gp-shadow-focus)]"
           />
         </label>
+
+        <div>
+          <span className="text-body-sm font-medium text-moss-900 mb-1 block">
+            Afmetingen <span className="font-normal text-[var(--gp-text-mute)]">(optioneel — voor de tuinkaart op schaal)</span>
+          </span>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              value={breedte}
+              onChange={(e) => { setBreedte(e.target.value); setFout(null); }}
+              min={0.1}
+              max={500}
+              step={0.1}
+              placeholder="breedte"
+              aria-label="Breedte in meter"
+              className="w-full px-3 py-2 text-body border border-[var(--gp-border)] rounded-md
+                         focus:outline-none focus:shadow-[var(--gp-shadow-focus)]"
+            />
+            <span className="text-body-sm text-[var(--gp-text-mute)]" aria-hidden>×</span>
+            <input
+              type="number"
+              value={diepte}
+              onChange={(e) => { setDiepte(e.target.value); setFout(null); }}
+              min={0.1}
+              max={500}
+              step={0.1}
+              placeholder="diepte"
+              aria-label="Diepte in meter"
+              className="w-full px-3 py-2 text-body border border-[var(--gp-border)] rounded-md
+                         focus:outline-none focus:shadow-[var(--gp-shadow-focus)]"
+            />
+            <span className="text-body-sm text-[var(--gp-text-mute)] shrink-0">m</span>
+          </div>
+        </div>
 
         {/* Gemeente + neerslag */}
         <div>

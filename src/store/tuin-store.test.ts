@@ -12,6 +12,8 @@ const zoneA: Omit<Zone, "plantPlaatsingen"> = {
   drainage: "well-drained",
   gemeente: null,
   regenval_mm_7d: null,
+  breedte_m: null,
+  diepte_m: null,
   borders: [],
 };
 
@@ -24,6 +26,8 @@ const zoneB: Omit<Zone, "plantPlaatsingen"> = {
   drainage: "moist",
   gemeente: null,
   regenval_mm_7d: null,
+  breedte_m: null,
+  diepte_m: null,
   borders: [],
 };
 

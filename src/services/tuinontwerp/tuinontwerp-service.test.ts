@@ -19,6 +19,8 @@ const zone: Zone = {
   drainage: "well-drained",
   gemeente: null,
   regenval_mm_7d: null,
+  breedte_m: null,
+  diepte_m: null,
   borders: [],
   plantPlaatsingen: [],
 };

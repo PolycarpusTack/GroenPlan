@@ -2,7 +2,7 @@
 // Invariant: elk commando met een doel-id (zone/plant/border) faalt expliciet als
 // dat id niet bestaat, i.p.v. stil niets te doen. Zo blijven aggregaat-invarianten
 // afdwingbaar en zijn bugs in de UI/store traceerbaar.
-import type { Tuin, Zone, PlantPlaatsing, Border, ZoneInput } from "./types";
+import type { Tuin, Zone, PlantPlaatsing, PlantGezondheid, Border, ZoneInput } from "./types";
 
 function eisZone(tuin: Tuin, zoneId: string): Zone {
   const zone = tuin.zones.find((z) => z.id === zoneId);
@@ -166,6 +166,55 @@ export function setPlantNotitie(
         ...z,
         plantPlaatsingen: z.plantPlaatsingen.map((p) =>
           p.id === plaatsingId ? { ...p, notitie } : p,
+        ),
+      },
+    ),
+  };
+}
+
+export function setPlantPositie(
+  tuin: Tuin,
+  zoneId: string,
+  plaatsingId: string,
+  x_m: number | null,
+  y_m: number | null,
+): Tuin {
+  const zone = eisZone(tuin, zoneId);
+  eisPlaatsing(zone, plaatsingId);
+  if ((x_m === null) !== (y_m === null)) {
+    throw new Error(`Positie van plant '${plaatsingId}' moet beide of geen coördinaten hebben`);
+  }
+  if (x_m !== null && (x_m < 0 || y_m! < 0)) {
+    throw new Error(`Positie van plant '${plaatsingId}' mag niet negatief zijn`);
+  }
+  return {
+    ...tuin,
+    zones: tuin.zones.map((z) =>
+      z.id !== zoneId ? z : {
+        ...z,
+        plantPlaatsingen: z.plantPlaatsingen.map((p) =>
+          p.id === plaatsingId ? { ...p, x_m, y_m } : p,
+        ),
+      },
+    ),
+  };
+}
+
+export function setPlantGezondheid(
+  tuin: Tuin,
+  zoneId: string,
+  plaatsingId: string,
+  gezondheid: PlantGezondheid | null,
+): Tuin {
+  const zone = eisZone(tuin, zoneId);
+  eisPlaatsing(zone, plaatsingId);
+  return {
+    ...tuin,
+    zones: tuin.zones.map((z) =>
+      z.id !== zoneId ? z : {
+        ...z,
+        plantPlaatsingen: z.plantPlaatsingen.map((p) =>
+          p.id === plaatsingId ? { ...p, gezondheid } : p,
         ),
       },
     ),
