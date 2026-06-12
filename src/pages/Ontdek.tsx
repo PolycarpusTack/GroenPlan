@@ -10,6 +10,8 @@ import { useTuinStore } from "../store/tuin-store";
 import { useTakenStore } from "../store/taken-store";
 import { useZoekGeschiedenisStore } from "../store/zoek-store";
 import { Button } from "../components/ui";
+import { BorderRecepten } from "../components/BorderRecepten";
+import { onderhoudsNiveau, ONDERHOUD_LABEL, type OnderhoudsNiveau } from "../domain/plant/onderhoudsNiveau";
 import type { AutoFillResultaat } from "../domain/plant/types";
 import type { MatchResultaat } from "../match/types";
 import type { ZoneInvoer } from "../match/types";
@@ -70,6 +72,8 @@ interface Filters {
   maxHoogte: number;
   kleuren: Set<string>;
   bestuivers: Set<string>;
+  /** 0 = uit; 1–3 = maximaal onderhoudsniveau (laag/medium/hoog). */
+  maxOnderhoud: number;
   inheems: boolean;
   eetbaar: boolean;
   nietGiftig: boolean;
@@ -81,6 +85,7 @@ const LEGE_FILTERS: Filters = {
   maxHoogte: 0,
   kleuren: new Set(),
   bestuivers: new Set(),
+  maxOnderhoud: 0,
   inheems: false,
   eetbaar: false,
   nietGiftig: false,
@@ -92,6 +97,7 @@ function aantalActieveFilters(f: Filters): number {
     f.kleuren.size +
     f.bestuivers.size +
     (f.minHoogte > 0 || f.maxHoogte > 0 ? 1 : 0) +
+    (f.maxOnderhoud > 0 ? 1 : 0) +
     (f.inheems ? 1 : 0) +
     (f.eetbaar ? 1 : 0) +
     (f.nietGiftig ? 1 : 0)
@@ -133,6 +139,8 @@ function pasFiltersTo(r: ZoekResultaat, f: Filters): boolean {
     const heeftBest = [...f.bestuivers].some((b) => pBest.includes(b));
     if (!heeftBest) return false;
   }
+
+  if (f.maxOnderhoud > 0 && onderhoudsNiveau(plant) > f.maxOnderhoud) return false;
 
   if (f.inheems && plant.ecologie.inheems_belgie.waarde !== true) return false;
   if (f.eetbaar && plant.veiligheid.eetbare_delen.waarde.length === 0) return false;
@@ -265,6 +273,29 @@ function FilterSidebar({ filters, onChange, onReset, aantalActief }: FilterSideb
           />
           <span className="text-caption text-[var(--gp-text-mute)]">cm</span>
         </div>
+      </FilterSectie>
+
+      {/* Onderhoud */}
+      <FilterSectie titel="Onderhoud">
+        <input
+          type="range"
+          min={0}
+          max={3}
+          step={1}
+          value={filters.maxOnderhoud}
+          onChange={(e) => onChange({ ...filters, maxOnderhoud: parseInt(e.target.value) })}
+          className="w-full accent-moss-700"
+          aria-label="Maximaal onderhoudsniveau"
+          aria-valuetext={filters.maxOnderhoud === 0 ? "Alle niveaus" : `Maximaal ${ONDERHOUD_LABEL[filters.maxOnderhoud as OnderhoudsNiveau]}`}
+        />
+        <div className="flex justify-between text-caption text-[var(--gp-text-mute)] mt-1">
+          <span>Alle</span><span>Laag</span><span>Medium</span><span>Hoog</span>
+        </div>
+        {filters.maxOnderhoud > 0 && (
+          <p className="text-caption text-moss-600 mt-1.5">
+            Max. {ONDERHOUD_LABEL[filters.maxOnderhoud as OnderhoudsNiveau].toLowerCase()} onderhoud
+          </p>
+        )}
       </FilterSectie>
 
       {/* Bloemkleur */}
@@ -484,9 +515,9 @@ export function OntdekPagina() {
     }
   }, [invoer, voegResultaatToe]);
 
-  const handleFotoSelecteer = useCallback((wetNaam: string) => {
+  // Zoek een soort op naam (gebruikt door foto-identificatie en borderrecepten).
+  const zoekSoort = useCallback((wetNaam: string) => {
     setInvoer(wetNaam);
-    setFotoOpen(false);
     setTimeout(() => {
       const naam = wetNaam.trim();
       if (!naam || !zoneAlsInvoerRef.current) return;
@@ -497,6 +528,11 @@ export function OntdekPagina() {
         .finally(() => setLaden(false));
     }, 0);
   }, [voegResultaatToe]);
+
+  const handleFotoSelecteer = useCallback((wetNaam: string) => {
+    setFotoOpen(false);
+    zoekSoort(wetNaam);
+  }, [zoekSoort]);
 
   // Auto-zoek wanneer ?zoek= URL-param aanwezig is (navigatie van begeleiderschip of Combinaties-tab)
   useEffect(() => {
@@ -737,6 +773,12 @@ export function OntdekPagina() {
                   <button onClick={() => setFilters({ ...filters, minHoogte: 0, maxHoogte: 0 })} aria-label="Verwijder hoogte-filter"><X size={10} /></button>
                 </span>
               )}
+              {filters.maxOnderhoud > 0 && (
+                <span className="flex items-center gap-1 text-caption bg-moss-50 border border-moss-300 text-moss-700 rounded-full px-2.5 py-0.5">
+                  Onderhoud ≤ {ONDERHOUD_LABEL[filters.maxOnderhoud as OnderhoudsNiveau].toLowerCase()}
+                  <button onClick={() => setFilters({ ...filters, maxOnderhoud: 0 })} aria-label="Verwijder onderhoud-filter"><X size={10} /></button>
+                </span>
+              )}
               {filters.inheems && (
                 <span className="flex items-center gap-1 text-caption bg-moss-50 border border-moss-300 text-moss-700 rounded-full px-2.5 py-0.5">
                   🇧🇪 Inheems <button onClick={() => setFilters({ ...filters, inheems: false })} aria-label="Verwijder filter inheems"><X size={10} /></button>
@@ -889,6 +931,9 @@ export function OntdekPagina() {
               )}
             </div>
           )}
+
+          {/* Borderrecepten — gecureerde plantcombinaties (klik een soort om de match te berekenen) */}
+          {actieveZoneId && <BorderRecepten onZoekSoort={zoekSoort} />}
         </div>
       </div>
     </div>
