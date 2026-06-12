@@ -5,21 +5,33 @@ import { berekenBegeleidersCheck } from "../domain/tuin/berekenBegeleidersCheck"
 
 export type OverlayTab = "kaart" | "zon" | "irrigatie" | "bodem";
 
-// Interactieve topdown-plattegrond. De Zone heeft (nog) geen echte coördinaten,
-// dus de indeling wordt deterministisch gegenereerd: zones worden als afgeronde
-// tegels in rijen gelegd, breedte ~ aantal planten. Geen verzonnen schaalmaat
-// (eerlijk: er zijn geen echte meters), wél een glanceable plattegrond.
+// Interactieve topdown-plattegrond. Zones zonder echte afmetingen worden
+// deterministisch ingedeeld (tegelgrootte ~ aantal planten); zones mét
+// breedte_m/diepte_m wegen mee met hun werkelijke oppervlakte. Geen verzonnen
+// schaalmaat: de caption claimt alleen wat de data echt draagt.
 
 const VB_W = 800;
 const VB_H = 440;
 const FOOT = 44;
 const GAP = 10;
 
+export function zoneOppervlakte(zone: Zone): number | null {
+  return zone.breedte_m != null && zone.diepte_m != null
+    ? zone.breedte_m * zone.diepte_m
+    : null;
+}
+
 interface Tegel { zone: Zone; x: number; y: number; w: number; h: number; index: number }
 
 function legIn(zones: Zone[]): Tegel[] {
   const n = zones.length;
   if (n === 0) return [];
+  // Gewicht = echte oppervlakte waar bekend; onbekende zones krijgen de
+  // mediaan van de bekende oppervlaktes (of plantenaantal als niets bekend is).
+  const bekend = zones.map(zoneOppervlakte).filter((o): o is number => o !== null).sort((a, b) => a - b);
+  const mediaan = bekend.length > 0 ? bekend[Math.floor(bekend.length / 2)] : null;
+  const gewichtVan = (z: Zone): number =>
+    zoneOppervlakte(z) ?? mediaan ?? z.plantPlaatsingen.length + 1;
   const rijen = Math.max(1, Math.round(Math.sqrt(n)));
   const perRij = Math.ceil(n / rijen);
   const rijH = (VB_H - GAP * (rijen - 1)) / rijen;
@@ -28,7 +40,7 @@ function legIn(zones: Zone[]): Tegel[] {
   for (let r = 0; r < rijen; r++) {
     const rijZones = zones.slice(r * perRij, (r + 1) * perRij);
     if (rijZones.length === 0) continue;
-    const gewichten = rijZones.map((z) => z.plantPlaatsingen.length + 1);
+    const gewichten = rijZones.map(gewichtVan);
     const totaal = gewichten.reduce((a, b) => a + b, 0);
     const beschikbaar = VB_W - GAP * (rijZones.length - 1);
     const y = r * (rijH + GAP);
@@ -85,10 +97,19 @@ interface Props {
   actieveZoneId: string | null;
   catalog: Record<string, AutoFillResultaat>;
   onZoneClick: (id: string) => void;
+  /** Aandachtspunten per zone-id (bv. droogte, achterstallige taken) — amber dot + tooltip. */
+  aandacht?: Record<string, string[]>;
 }
 
-export function TuinkaartSVG({ zones, overlay, actieveZoneId, catalog, onZoneClick }: Props) {
+export function TuinkaartSVG({ zones, overlay, actieveZoneId, catalog, onZoneClick, aandacht }: Props) {
   const tegels = useMemo(() => legIn(zones), [zones]);
+  const aantalMetMaat = zones.filter((z) => zoneOppervlakte(z) !== null).length;
+  const caption =
+    aantalMetMaat === zones.length && zones.length > 0
+      ? "Tegelgrootte ~ werkelijke oppervlakte · klik een zone"
+      : aantalMetMaat > 0
+      ? "Tegelgrootte ~ oppervlakte (waar bekend) · klik een zone"
+      : "Automatische indeling · tegelgrootte ~ aantal planten · klik een zone";
 
   return (
     <svg
@@ -104,7 +125,7 @@ export function TuinkaartSVG({ zones, overlay, actieveZoneId, catalog, onZoneCli
         <polygon points="0,12 9,3 18,12" fill="#C19A6B" />
         <rect x="2" y="12" width="14" height="14" rx="1.5" fill="#D9C3A0" stroke="#C19A6B" />
         <text x="24" y="24" fontSize={11} fontFamily="Inter, sans-serif" fill="#808080">
-          Automatische indeling · tegelgrootte ~ aantal planten · klik een zone
+          {caption}
         </text>
       </g>
 
@@ -112,7 +133,15 @@ export function TuinkaartSVG({ zones, overlay, actieveZoneId, catalog, onZoneCli
         const { fill, rand } = tegelKleur(t.zone, overlay, t.index);
         const actief = t.zone.id === actieveZoneId;
         const conflict = berekenBegeleidersCheck(t.zone.plantPlaatsingen, catalog).some((r) => r.relatie === "slecht");
+        const alerts = [
+          ...(conflict ? ["Begeleidersconflict"] : []),
+          ...(aandacht?.[t.zone.id] ?? []),
+        ];
         const aantal = t.zone.plantPlaatsingen.length;
+        const opp = zoneOppervlakte(t.zone);
+        const subtitel = opp !== null
+          ? `${Math.round(opp * 10) / 10} m² · ${aantal} plant${aantal !== 1 ? "en" : ""}`
+          : `${aantal} plant${aantal !== 1 ? "en" : ""}`;
         const ruim = t.w > 90 && t.h > 56;
         const waarde = overlayWaarde(t.zone, overlay);
         return (
@@ -120,12 +149,12 @@ export function TuinkaartSVG({ zones, overlay, actieveZoneId, catalog, onZoneCli
             key={t.zone.id}
             role="button"
             tabIndex={0}
-            aria-label={`Zone ${t.zone.naam}`}
+            aria-label={`Zone ${t.zone.naam}${alerts.length > 0 ? ` — ${alerts.join(", ")}` : ""}`}
             style={{ cursor: "pointer" }}
             onClick={() => onZoneClick(t.zone.id)}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onZoneClick(t.zone.id); } }}
           >
-            <title>{t.zone.naam}</title>
+            <title>{alerts.length > 0 ? `${t.zone.naam} — ${alerts.join(" · ")}` : t.zone.naam}</title>
             <rect
               x={t.x} y={t.y} width={t.w} height={t.h} rx={12}
               fill={fill}
@@ -136,16 +165,17 @@ export function TuinkaartSVG({ zones, overlay, actieveZoneId, catalog, onZoneCli
               {kort(t.zone.naam, t.w - 24)}
             </text>
             <text x={t.x + 12} y={t.y + 40} fontSize={10} fontFamily="Inter, sans-serif" fill="#5b6b5e">
-              {aantal} plant{aantal !== 1 ? "en" : ""}
+              {kort(subtitel, t.w - 24)}
             </text>
             {ruim && waarde && (
               <text x={t.x + 12} y={t.y + 56} fontSize={10} fontFamily="Inter, sans-serif" fill="#5b6b5e">
                 {kort(waarde, t.w - 24)}
               </text>
             )}
-            {conflict && (
+            {alerts.length > 0 && (
               <g aria-hidden>
-                <circle cx={t.x + t.w - 14} cy={t.y + 14} r={6} fill="#9C3D2E" />
+                {/* Rust = conflict in de beplanting zelf; amber = omgevings-aandacht */}
+                <circle cx={t.x + t.w - 14} cy={t.y + 14} r={6} fill={conflict ? "#9C3D2E" : "#D97706"} />
                 <text x={t.x + t.w - 14} y={t.y + 17.5} fontSize={9} fontWeight={700} textAnchor="middle" fill="#fff">!</text>
               </g>
             )}

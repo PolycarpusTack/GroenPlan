@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Plus, Sun, Droplets, Layers, Map } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ZoneFormulier } from "../components/ZoneFormulier";
 import { ZoneDetailPanel } from "../components/ZoneDetailPanel";
 import { MobileSheet } from "../components/MobileSheet";
-import { TuinkaartSVG } from "../components/TuinkaartSVG";
+import { TuinkaartSVG, zoneOppervlakte } from "../components/TuinkaartSVG";
 import { useTuinStore } from "../store/tuin-store";
+import { useTakenStore } from "../store/taken-store";
 import type { Zone, ZoneInput } from "../domain/tuin/types";
 import { Button } from "../components/ui";
+
+// Onder deze 7-daagse neerslag beschouwen we een zone als droogte-gevoelig.
+const DROOGTE_GRENS_MM = 5;
 
 // ── Overlay tab definitie ──────────────────────────────────────────────────
 
@@ -76,6 +80,35 @@ export function TuinkaartPagina() {
     voegZoneToe, updateZone, verwijderZone, setActieveZone, verwijderPlantUitZone,
   } = useTuinStore();
   const actieveZone = tuin.zones.find((z) => z.id === actieveZoneId) ?? null;
+  const taken = useTakenStore((s) => s.taken);
+
+  // Aandachtspunten per zone: droogte + achterstallige taken (begeleiders-
+  // conflicten berekent TuinkaartSVG zelf).
+  const aandacht = useMemo(() => {
+    const vandaag = new Date().toISOString().slice(0, 10);
+    const resultaat: Record<string, string[]> = {};
+    for (const z of tuin.zones) {
+      const punten: string[] = [];
+      if (z.regenval_mm_7d != null && z.regenval_mm_7d < DROOGTE_GRENS_MM) {
+        punten.push(`Droogte: ${z.regenval_mm_7d} mm neerslag in 7 dagen`);
+      }
+      const achterstallig = taken.filter(
+        (t) => t.status === "open" && t.zoneId === z.id && t.vervaldatum && t.vervaldatum < vandaag,
+      ).length;
+      if (achterstallig > 0) {
+        punten.push(`${achterstallig} achterstallige ta${achterstallig === 1 ? "ak" : "ken"}`);
+      }
+      if (punten.length > 0) resultaat[z.id] = punten;
+    }
+    return resultaat;
+  }, [tuin.zones, taken]);
+
+  const totaleOppervlakte = useMemo(() => {
+    const opps = tuin.zones.map(zoneOppervlakte);
+    return opps.length > 0 && opps.every((o) => o !== null)
+      ? Math.round(opps.reduce((a, b) => a! + b!, 0)! )
+      : null;
+  }, [tuin.zones]);
 
   const [formulierOpen, setFormulierOpen] = useState(false);
   const [bewerkZone, setBewerkZone] = useState<Zone | null>(null);
@@ -93,7 +126,8 @@ export function TuinkaartPagina() {
         <div>
           <h1 className="font-display text-display-md text-moss-900">{tuin.naam}</h1>
           <p className="text-body text-moss-500">
-            {tuin.zones.length} zone{tuin.zones.length !== 1 ? "s" : ""} · hardheidszone {tuin.hardheid}
+            {tuin.zones.length} zone{tuin.zones.length !== 1 ? "s" : ""}
+            {totaleOppervlakte !== null && ` · ${totaleOppervlakte} m²`} · hardheidszone {tuin.hardheid}
           </p>
         </div>
         <Button
@@ -155,6 +189,7 @@ export function TuinkaartPagina() {
             overlay={actieveTab}
             actieveZoneId={actieveZoneId}
             catalog={plantCatalog}
+            aandacht={aandacht}
             onZoneClick={(id) => { setActieveZone(id === actieveZoneId ? null : id); setBevestigVerwijder(null); }}
           />
 
@@ -210,6 +245,9 @@ export function TuinkaartPagina() {
                   { label: "Grondsoort", waarde: GROND_LABEL[actieveZone.grondsoort] ?? actieveZone.grondsoort },
                   { label: "Zonlicht", waarde: ZON_LABEL[actieveZone.zon] ?? actieveZone.zon },
                   { label: "Drainage", waarde: DRAIN_LABEL[actieveZone.drainage] ?? actieveZone.drainage },
+                  ...(actieveZone.breedte_m != null && actieveZone.diepte_m != null
+                    ? [{ label: "Afmetingen", waarde: `${actieveZone.breedte_m} × ${actieveZone.diepte_m} m (${Math.round(actieveZone.breedte_m * actieveZone.diepte_m * 10) / 10} m²)` }]
+                    : []),
                   ...(actieveZone.pH != null ? [{ label: "pH", waarde: String(actieveZone.pH) }] : []),
                   ...(actieveZone.gemeente ? [{ label: "Gemeente", waarde: actieveZone.gemeente }] : []),
                   ...(actieveZone.regenval_mm_7d != null ? [{ label: "Neerslag (7d)", waarde: `${actieveZone.regenval_mm_7d} mm` }] : []),
