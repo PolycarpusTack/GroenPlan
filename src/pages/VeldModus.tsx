@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import {
   Shovel, WifiOff, ChevronLeft, Check, AlertTriangle,
   Search, Leaf, ClipboardList, ScanLine, CheckSquare2, X, ExternalLink, Bug, ShieldCheck,
-  MapPin, Sparkles, Navigation,
+  MapPin, Sparkles, Navigation, Plus, Scissors, Droplets, Sprout, Apple, CalendarCheck, CalendarClock, Sun,
   type LucideIcon,
 } from "lucide-react";
+import { bepaalTaakType, type TaakType } from "../domain/taken/taakType";
 import { useDagboekStore, OBSERVATIE_TYPE_LABEL, OBSERVATIE_TYPE_ICOON } from "../store/dagboek-store";
 import { useTakenStore } from "../store/taken-store";
 import { useTuinStore } from "../store/tuin-store";
@@ -67,6 +68,74 @@ function ConnectiePil({ online }: { online: boolean }) {
 
 type VeldPanel = "observatie" | "taken" | "plantid" | "mijnzone" | "coach" | null;
 
+const VELD_TAAK_ICOON: Record<TaakType, LucideIcon> = {
+  snoei: Scissors, water: Droplets, voeding: Sprout,
+  controle: Search, oogst: Apple, overig: CalendarCheck,
+};
+
+function morgenIso(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+// ── Veld-bottom-nav: Vandaag · Taken · [FAB] · Foto · Zone ──────────────────────
+// Vervangt op mobiel de globale BottomNav binnen /veld (één-duim-bediening).
+// De FAB is contextafhankelijk: standaard "+ observatie", in de coach sparkles.
+
+function VeldNav({ paneel, setPaneel }: { paneel: VeldPanel; setPaneel: (p: VeldPanel) => void }) {
+  const items: { id: VeldPanel; label: string; Icoon: LucideIcon }[] = [
+    { id: null, label: "Vandaag", Icoon: Sun },
+    { id: "taken", label: "Taken", Icoon: CheckSquare2 },
+  ];
+  const itemsRechts: { id: VeldPanel; label: string; Icoon: LucideIcon }[] = [
+    { id: "plantid", label: "Foto", Icoon: ScanLine },
+    { id: "mijnzone", label: "Zone", Icoon: MapPin },
+  ];
+  const FabIcoon = paneel === "coach" ? Sparkles : Plus;
+
+  const navKnop = ({ id, label, Icoon }: { id: VeldPanel; label: string; Icoon: LucideIcon }) => {
+    const actief = paneel === id;
+    return (
+      <button
+        key={label}
+        onClick={() => setPaneel(id)}
+        aria-current={actief ? "page" : undefined}
+        className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full min-w-0 text-caption transition-colors ${
+          actief ? "text-moss-700" : "text-[var(--gp-text-mute)]"
+        }`}
+      >
+        <Icoon size={20} aria-hidden />
+        <span className={`truncate max-w-full ${actief ? "font-medium" : ""}`}>{label}</span>
+      </button>
+    );
+  };
+
+  return (
+    <nav
+      className="md:hidden fixed bottom-0 inset-x-0 h-16 bg-white border-t border-[var(--gp-border)] z-40 safe-area-inset-bottom"
+      aria-label="Veld-modus navigatie"
+    >
+      <div className="flex h-full items-stretch">
+        {items.map(navKnop)}
+        {/* Verhoogde context-FAB */}
+        <div className="relative flex-1 min-w-0">
+          <button
+            onClick={() => setPaneel(paneel === "coach" ? "coach" : "observatie")}
+            aria-label={paneel === "coach" ? "AI Coach" : "Nieuwe observatie"}
+            className={`absolute left-1/2 -translate-x-1/2 -top-5 w-14 h-14 rounded-full shadow-lg
+                        flex items-center justify-center text-white active:scale-95 transition-transform
+                        ${paneel === "coach" ? "bg-moss-900" : "bg-moss-600 hover:bg-moss-700"}`}
+          >
+            <FabIcoon size={24} aria-hidden />
+          </button>
+        </div>
+        {itemsRechts.map(navKnop)}
+      </div>
+    </nav>
+  );
+}
+
 // ── Actie-tegel (veld-modus startscherm) ────────────────────────────────────────
 
 const TEGEL_KLEUR: Record<string, { bg: string; icon: string }> = {
@@ -78,7 +147,7 @@ const TEGEL_KLEUR: Record<string, { bg: string; icon: string }> = {
 };
 
 function ActieTegel({
-  icoon: Icoon, kleur, titel, omschrijving, onClick, badge,
+  icoon: Icoon, kleur, titel, omschrijving, onClick, badge, compact = false,
 }: {
   icoon: LucideIcon;
   kleur: keyof typeof TEGEL_KLEUR;
@@ -86,26 +155,29 @@ function ActieTegel({
   omschrijving: string;
   onClick: () => void;
   badge?: number;
+  compact?: boolean;
 }) {
   const k = TEGEL_KLEUR[kleur];
   return (
     <button
       onClick={onClick}
-      className="relative flex flex-col items-center justify-center gap-3 p-6 min-h-[120px] rounded-2xl
+      className={`relative flex flex-col items-center justify-center rounded-2xl
                  border-2 border-[var(--gp-border)] bg-white hover:border-moss-400 hover:shadow-md
-                 transition-all active:scale-[0.98] text-center"
+                 transition-all active:scale-[0.98] text-center
+                 ${compact ? "gap-1.5 p-3 min-h-[84px]" : "gap-3 p-6 min-h-[120px]"}`}
     >
       {badge != null && badge > 0 && (
-        <span className="absolute top-3 right-3 min-w-[1.25rem] h-5 flex items-center justify-center
-                         rounded-full bg-[var(--gp-rust-700)] text-white text-[10px] font-bold px-1">
+        <span className={`absolute min-w-[1.25rem] h-5 flex items-center justify-center
+                         rounded-full bg-[var(--gp-rust-700)] text-white text-[10px] font-bold px-1
+                         ${compact ? "top-1.5 right-1.5" : "top-3 right-3"}`}>
           {badge}
         </span>
       )}
-      <div className={`w-12 h-12 rounded-xl ${k.bg} flex items-center justify-center`}>
-        <Icoon size={24} className={k.icon} aria-hidden />
+      <div className={`rounded-xl ${k.bg} flex items-center justify-center ${compact ? "w-9 h-9" : "w-12 h-12"}`}>
+        <Icoon size={compact ? 18 : 24} className={k.icon} aria-hidden />
       </div>
-      <span className="text-body font-semibold text-moss-900">{titel}</span>
-      <span className="text-caption text-[var(--gp-text-mute)]">{omschrijving}</span>
+      <span className={`font-semibold text-moss-900 ${compact ? "text-caption" : "text-body"}`}>{titel}</span>
+      {!compact && <span className="text-caption text-[var(--gp-text-mute)]">{omschrijving}</span>}
     </button>
   );
 }
@@ -812,22 +884,36 @@ export function VeldModusPagina() {
   const observaties = useDagboekStore((s) => s.observaties);
   const zones = useTuinStore((s) => s.tuin.zones);
   const taken = useTakenStore((s) => s.taken);
+  const toggleStatus = useTakenStore((s) => s.toggleStatus);
+  const updateTaak = useTakenStore((s) => s.updateTaak);
   const openTaken = useMemo(() => taken.filter((t) => t.status === "open"), [taken]);
 
   const [paneel, setPaneel] = useState<VeldPanel>(null);
 
-  const vandaagOfVerlopen = useMemo(() => openTaken.filter(
-    (t) => t.vervaldatum === null || t.vervaldatum <= VANDAAG,
-  ), [openTaken]);
+  // Verlopen eerst (oudste vervaldatum bovenaan), dan vandaag/zonder datum.
+  const vandaagOfVerlopen = useMemo(() =>
+    openTaken
+      .filter((t) => t.vervaldatum === null || t.vervaldatum <= VANDAAG)
+      .sort((a, b) => (a.vervaldatum ?? VANDAAG).localeCompare(b.vervaldatum ?? VANDAAG)),
+    [openTaken],
+  );
+  const huidigeTaak = vandaagOfVerlopen[0] ?? null;
+  const volgendeTaken = vandaagOfVerlopen.slice(1, 4);
   const recenteObservaties = observaties.slice(0, 3);
 
   const zonesVoorUI = zones.map((z) => ({ id: z.id, naam: z.naam }));
   const zonesMetGemeente = zones.map((z) => ({ id: z.id, naam: z.naam, gemeente: z.gemeente }));
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
-      {/* Connectie-status — altijd zichtbaar rechtsboven (Online · Offline) */}
-      <div className="flex justify-end">
+    <div className="max-w-lg mx-auto px-4 py-6 space-y-6 pb-28 md:pb-6">
+      {/* Topregel: verlaten (mobiel heeft hier geen globale nav) + connectie-status */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => navigate("/")}
+          className="flex items-center gap-1 text-caption text-[var(--gp-text-mute)] hover:text-moss-700 md:invisible"
+        >
+          <ChevronLeft size={14} aria-hidden /> Verlaat veld-modus
+        </button>
         <ConnectiePil online={online} />
       </div>
 
@@ -861,32 +947,71 @@ export function VeldModusPagina() {
         <CoachPaneel onTerug={() => setPaneel(null)} online={online} />
       )}
 
-      {/* Action tiles */}
-      {!paneel && (
-        <div className="grid grid-cols-2 gap-3">
-          <ActieTegel icoon={Leaf} kleur="moss" titel="Observatie" omschrijving="Loggen wat je ziet" onClick={() => setPaneel("observatie")} />
-          <ActieTegel icoon={ClipboardList} kleur="amber" titel="Taken" omschrijving="Afvinken & bijhouden" onClick={() => setPaneel("taken")} badge={vandaagOfVerlopen.length} />
-          <ActieTegel icoon={ScanLine} kleur="sky" titel="Plant-ID" omschrijving="Foto identificeren" onClick={() => setPaneel("plantid")} />
-          <ActieTegel icoon={Search} kleur="clay" titel="Zoeken" omschrijving="Plant opzoeken" onClick={() => navigate("/ontdek")} />
-          <ActieTegel icoon={MapPin} kleur="moss" titel="Mijn zone" omschrijving="Vind via GPS" onClick={() => setPaneel("mijnzone")} />
-          <ActieTegel icoon={Sparkles} kleur="bloom" titel="Vraag AI" omschrijving="Tuincoach" onClick={() => setPaneel("coach")} />
-        </div>
-      )}
+      {/* ── Eén primaire actie: de huidige taak (groot, duim-vriendelijk) ── */}
+      {!paneel && huidigeTaak && (() => {
+        const verlopen = huidigeTaak.vervaldatum !== null && huidigeTaak.vervaldatum < VANDAAG;
+        const TaakIcoon = VELD_TAAK_ICOON[bepaalTaakType(huidigeTaak.titel)];
+        const zoneNaam = huidigeTaak.zoneId
+          ? zones.find((z) => z.id === huidigeTaak.zoneId)?.naam
+          : null;
+        return (
+          <section className="rounded-2xl border-2 border-[var(--gp-border)] bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <span className={`text-caption font-medium rounded-full px-2.5 py-0.5 ${
+                verlopen
+                  ? "bg-[var(--gp-rust-100)] text-[var(--gp-rust-700)]"
+                  : "bg-moss-100 text-moss-700"
+              }`}>
+                {verlopen ? "⚠ Verlopen" : "Vandaag"}
+              </span>
+              <span className="text-caption text-[var(--gp-text-mute)]">
+                Taak 1 van {vandaagOfVerlopen.length}
+              </span>
+            </div>
+            <div className="flex items-start gap-3 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-sky-100 flex items-center justify-center shrink-0">
+                <TaakIcoon size={22} className="text-sky-700" aria-hidden />
+              </div>
+              <div className="min-w-0">
+                <h2 className="font-display text-heading-lg text-moss-900 leading-snug">{huidigeTaak.titel}</h2>
+                <p className="text-body-sm text-[var(--gp-text-mute)]">
+                  {[zoneNaam, huidigeTaak.vervaldatum].filter(Boolean).join(" · ") || "Geen datum"}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <button
+                onClick={() => toggleStatus(huidigeTaak.id)}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-moss-600 hover:bg-moss-700
+                           text-white text-body font-semibold active:scale-[0.99] transition-all"
+              >
+                <Check size={18} aria-hidden /> Markeer als gedaan
+              </button>
+              <button
+                onClick={() => updateTaak(huidigeTaak.id, { vervaldatum: morgenIso() })}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-[var(--gp-border)]
+                           text-body text-moss-900 hover:bg-[var(--gp-surface-alt)] active:scale-[0.99] transition-all"
+              >
+                <CalendarClock size={16} aria-hidden /> Stel uit tot morgen
+              </button>
+            </div>
+          </section>
+        );
+      })()}
 
-      {/* Vandaag-taken overzicht */}
-      {!paneel && vandaagOfVerlopen.length > 0 && (
+      {/* Volgende taken — compact */}
+      {!paneel && volgendeTaken.length > 0 && (
         <section>
           <p className="text-caption text-[var(--gp-text-mute)] uppercase tracking-wide mb-2">
-            Vandaag & verlopen · {vandaagOfVerlopen.length}
+            Volgende taken
           </p>
           <ul className="space-y-2">
-            {vandaagOfVerlopen.slice(0, 4).map((t) => {
+            {volgendeTaken.map((t) => {
               const verlopen = t.vervaldatum !== null && t.vervaldatum < VANDAAG;
+              const TaakIcoon = VELD_TAAK_ICOON[bepaalTaakType(t.titel)];
               return (
                 <li key={t.id} className="flex items-center gap-3 px-4 py-3 rounded-xl border border-[var(--gp-border)] bg-white">
-                  {verlopen
-                    ? <AlertTriangle size={16} className="text-[var(--gp-rust-600)] shrink-0" aria-hidden />
-                    : <div className="w-4 h-4 rounded-sm border-2 border-moss-400 shrink-0" aria-hidden />}
+                  <TaakIcoon size={16} className={verlopen ? "text-[var(--gp-rust-600)] shrink-0" : "text-moss-600 shrink-0"} aria-hidden />
                   <p className="text-body-sm text-moss-900 flex-1 min-w-0 truncate">{t.titel}</p>
                   {verlopen && (
                     <span className="text-caption text-[var(--gp-rust-600)] font-medium shrink-0">verlopen</span>
@@ -900,6 +1025,30 @@ export function VeldModusPagina() {
               </button>
             )}
           </ul>
+        </section>
+      )}
+
+      {/* Geen taken: rustige bevestiging i.p.v. lege hero */}
+      {!paneel && !huidigeTaak && (
+        <section className="rounded-2xl border-2 border-dashed border-[var(--gp-border)] bg-white p-5 text-center">
+          <Check size={24} className="text-moss-500 mx-auto mb-2" aria-hidden />
+          <p className="text-body text-moss-900 font-medium">Alles gedaan voor vandaag</p>
+          <p className="text-caption text-[var(--gp-text-mute)]">Geen openstaande taken — log gerust een observatie.</p>
+        </section>
+      )}
+
+      {/* Secundaire acties — compact grid (de primaire flow zit hierboven + in de balk onderaan) */}
+      {!paneel && (
+        <section>
+          <p className="text-caption text-[var(--gp-text-mute)] uppercase tracking-wide mb-2">Acties</p>
+          <div className="grid grid-cols-3 gap-2">
+            <ActieTegel compact icoon={Leaf} kleur="moss" titel="Observatie" omschrijving="Loggen" onClick={() => setPaneel("observatie")} />
+            <ActieTegel compact icoon={ClipboardList} kleur="amber" titel="Taken" omschrijving="Afvinken" onClick={() => setPaneel("taken")} badge={vandaagOfVerlopen.length} />
+            <ActieTegel compact icoon={ScanLine} kleur="sky" titel="Plant-ID" omschrijving="Foto" onClick={() => setPaneel("plantid")} />
+            <ActieTegel compact icoon={Search} kleur="clay" titel="Zoeken" omschrijving="Ontdek" onClick={() => navigate("/ontdek")} />
+            <ActieTegel compact icoon={MapPin} kleur="moss" titel="Mijn zone" omschrijving="GPS" onClick={() => setPaneel("mijnzone")} />
+            <ActieTegel compact icoon={Sparkles} kleur="bloom" titel="Vraag AI" omschrijving="Coach" onClick={() => setPaneel("coach")} />
+          </div>
         </section>
       )}
 
@@ -923,15 +1072,8 @@ export function VeldModusPagina() {
         </section>
       )}
 
-      {/* Lege staat */}
-      {!paneel && recenteObservaties.length === 0 && vandaagOfVerlopen.length === 0 && (
-        <div className="flex flex-col items-center py-8 text-center">
-          <Shovel size={32} className="text-moss-200 mb-3" aria-hidden />
-          <p className="text-body-sm text-[var(--gp-text-mute)]">
-            Nog niets gelogd vandaag. Tik op een actie om te starten.
-          </p>
-        </div>
-      )}
+      {/* Veld-bottom-nav met context-FAB (alleen mobiel; vervangt de globale BottomNav) */}
+      <VeldNav paneel={paneel} setPaneel={setPaneel} />
     </div>
   );
 }

@@ -44,6 +44,9 @@ export function BottomNav() {
   const meerActief = MEER_ITEMS.some((i) => i.naar === location.pathname);
   const gaNaar = (naar: string) => { setMeerOpen(false); navigate(naar); };
 
+  // Veld-modus heeft zijn eigen bottom-nav met context-FAB (zie VeldModus.tsx).
+  if (location.pathname.startsWith("/veld")) return null;
+
   return (
     <nav
       className="md:hidden fixed bottom-0 inset-x-0 h-16 bg-white border-t border-[var(--gp-border)] z-40 safe-area-inset-bottom"
