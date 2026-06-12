@@ -8,11 +8,9 @@ import { TuinkaartSVG } from "../components/TuinkaartSVG";
 import { zoneOppervlakte } from "../domain/tuin/tuin";
 import { useTuinStore } from "../store/tuin-store";
 import { useTakenStore } from "../store/taken-store";
+import { berekenZoneAandacht } from "../domain/tuin/berekenZoneAandacht";
 import type { Zone, ZoneInput } from "../domain/tuin/types";
 import { Button } from "../components/ui";
-
-// Onder deze 7-daagse neerslag beschouwen we een zone als droogte-gevoelig.
-const DROOGTE_GRENS_MM = 5;
 
 // ── Overlay tab definitie ──────────────────────────────────────────────────
 
@@ -85,24 +83,10 @@ export function TuinkaartPagina() {
 
   // Aandachtspunten per zone: droogte + achterstallige taken (begeleiders-
   // conflicten berekent TuinkaartSVG zelf).
-  const aandacht = useMemo(() => {
-    const vandaag = new Date().toISOString().slice(0, 10);
-    const resultaat: Record<string, string[]> = {};
-    for (const z of tuin.zones) {
-      const punten: string[] = [];
-      if (z.regenval_mm_7d != null && z.regenval_mm_7d < DROOGTE_GRENS_MM) {
-        punten.push(`Droogte: ${z.regenval_mm_7d} mm neerslag in 7 dagen`);
-      }
-      const achterstallig = taken.filter(
-        (t) => t.status === "open" && t.zoneId === z.id && t.vervaldatum && t.vervaldatum < vandaag,
-      ).length;
-      if (achterstallig > 0) {
-        punten.push(`${achterstallig} achterstallige ta${achterstallig === 1 ? "ak" : "ken"}`);
-      }
-      if (punten.length > 0) resultaat[z.id] = punten;
-    }
-    return resultaat;
-  }, [tuin.zones, taken]);
+  const aandacht = useMemo(
+    () => berekenZoneAandacht(tuin.zones, taken, new Date().toISOString().slice(0, 10)),
+    [tuin.zones, taken],
+  );
 
   const totaleOppervlakte = useMemo(() => {
     const opps = tuin.zones.map(zoneOppervlakte);

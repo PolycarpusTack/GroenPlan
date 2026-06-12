@@ -1,15 +1,36 @@
 import { useState, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  MapPin, Pencil, Check, X,
+  Pencil, Check, X,
   AlertTriangle, CalendarCheck, BookOpen, Download, Upload,
-  Plus, Camera, Bug, Bot, ChevronRight, Sprout,
+  Plus, Camera, Bug, Bot, Sprout, Leaf,
+  Scissors, Droplets, Search, Apple,
 } from "lucide-react";
 import { useTuinStore } from "../store/tuin-store";
 import { useTakenStore } from "../store/taken-store";
 import { useDagboekStore, OBSERVATIE_TYPE_ICOON } from "../store/dagboek-store";
 import { berekenBegeleidersCheck } from "../domain/tuin/berekenBegeleidersCheck";
+import { berekenZoneAandacht } from "../domain/tuin/berekenZoneAandacht";
 import { berekenTuinGezondheid, berekenBiodiversiteit } from "../domain/tuin/berekenScores";
+import { bepaalTaakType, TAAK_TYPE_LABEL, type TaakType } from "../domain/taken/taakType";
+
+const TAAK_TYPE_ICOON: Record<TaakType, React.ReactNode> = {
+  snoei:    <Scissors size={13} className="text-moss-600" aria-hidden />,
+  water:    <Droplets size={13} className="text-sky-600" aria-hidden />,
+  voeding:  <Sprout size={13} className="text-moss-600" aria-hidden />,
+  controle: <Search size={13} className="text-amber-600" aria-hidden />,
+  oogst:    <Apple size={13} className="text-amber-600" aria-hidden />,
+  overig:   <CalendarCheck size={13} className="text-[var(--gp-text-mute)]" aria-hidden />,
+};
+
+const TAAK_PILL_KLASSE: Record<TaakType, string> = {
+  snoei:    "bg-moss-50 text-moss-700 border-moss-200",
+  water:    "bg-sky-50 text-sky-700 border-sky-200",
+  voeding:  "bg-moss-50 text-moss-700 border-moss-200",
+  controle: "bg-amber-50 text-amber-700 border-amber-200",
+  oogst:    "bg-amber-50 text-amber-700 border-amber-200",
+  overig:   "bg-[var(--gp-surface-alt)] text-[var(--gp-text-mute)] border-[var(--gp-border)]",
+};
 import { WeerWidget } from "../components/WeerWidget";
 import type { ObservatieType } from "../domain/dagboek/types";
 import { Button, StatCard } from "../components/ui";
@@ -79,10 +100,11 @@ function GezondheidDonut({ score }: { score: number }) {
   );
 }
 
-// Mini bloeikalender: volgende 4 maanden, max 6 planten
+// Mini bloeikalender: bloeiende soorten per zone over de komende 4 maanden
+// (maand-granulariteit — fijner laat de plantdata niet toe).
 const MAANDEN_KORT = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
 
-function MiniBloeikalender({ rijen }: { rijen: { naam: string; maanden: Set<number>; kleur: string }[] }) {
+function MiniBloeikalender({ rijen }: { rijen: { naam: string; perMaand: Record<number, number> }[] }) {
   const huidig = new Date().getMonth() + 1; // 1-12
   const zichtbaar = Array.from({ length: 4 }, (_, i) => ((huidig - 1 + i) % 12) + 1);
 
@@ -112,16 +134,27 @@ function MiniBloeikalender({ rijen }: { rijen: { naam: string; maanden: Set<numb
         <tbody>
           {rijen.map((rij, ri) => (
             <tr key={ri}>
-              <td className="pr-2 py-0.5 truncate max-w-[7rem] gp-scientific text-moss-900 text-caption">
+              <td className="pr-2 py-0.5 truncate max-w-[7rem] text-moss-900 text-caption font-medium">
                 {rij.naam}
               </td>
-              {zichtbaar.map((m) => (
-                <td key={m} className="py-0.5 text-center">
-                  {rij.maanden.has(m)
-                    ? <span className="inline-block w-4 h-4 rounded-sm" style={{ backgroundColor: rij.kleur, opacity: 0.8 }} />
-                    : <span className="inline-block w-4 h-4 rounded-sm bg-[var(--gp-border)]" />}
-                </td>
-              ))}
+              {zichtbaar.map((m) => {
+                const telling = rij.perMaand[m] ?? 0;
+                return (
+                  <td key={m} className="py-0.5 text-center">
+                    {telling > 0 ? (
+                      <span
+                        className="inline-flex items-center justify-center w-6 h-4 rounded-sm text-[9px] font-semibold text-white"
+                        style={{ backgroundColor: "#7c3aed", opacity: Math.min(0.4 + telling * 0.2, 0.95) }}
+                        title={`${telling} bloeiende soort${telling !== 1 ? "en" : ""}`}
+                      >
+                        {telling}
+                      </span>
+                    ) : (
+                      <span className="inline-block w-6 h-4 rounded-sm bg-[var(--gp-border)]" />
+                    )}
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>
@@ -133,18 +166,17 @@ function MiniBloeikalender({ rijen }: { rijen: { naam: string; maanden: Set<numb
 export function DashboardPagina() {
   const navigate = useNavigate();
   const tuin = useTuinStore((s) => s.tuin);
-  const actieveZoneId = useTuinStore((s) => s.actieveZoneId);
   const plantCatalog = useTuinStore((s) => s.plantCatalog);
   const hernoem = useTuinStore((s) => s.hernoem);
   const setHardheid = useTuinStore((s) => s.setHardheid);
 
   const taken = useTakenStore((s) => s.taken);
+  const toggleStatus = useTakenStore((s) => s.toggleStatus);
   const observaties = useDagboekStore((s) => s.observaties);
   const laadTuin = useTuinStore((s) => s.laadTuin);
   const laadTaken = useTakenStore((s) => s.laadTaken);
   const laadObservaties = useDagboekStore((s) => s.laadObservaties);
 
-  const actieveZone = tuin.zones.find((z) => z.id === actieveZoneId);
   const weerGemeente = tuin.zones.find((z) => z.gemeente)?.gemeente ?? null;
   const seizoen = huidigSeizoen();
   const vandaag = vandaagIso();
@@ -159,6 +191,56 @@ export function DashboardPagina() {
     [tuin.zones, plantCatalog],
   );
 
+  // Aandachtspunten per zone (droogte, achterstallig) + begeleidersconflicten
+  const zoneAandacht = useMemo(
+    () => berekenZoneAandacht(tuin.zones, taken, vandaag),
+    [tuin.zones, taken, vandaag],
+  );
+  const aandachtZones = useMemo(() =>
+    tuin.zones
+      .map((z) => {
+        const punten = [...(zoneAandacht[z.id] ?? [])];
+        if (zonesMetConflict.some((c) => c.id === z.id)) punten.push("Begeleidersconflict");
+        return { zone: z, punten };
+      })
+      .filter(({ punten }) => punten.length > 0),
+    [tuin.zones, zoneAandacht, zonesMetConflict],
+  );
+
+  // Recent actief: plant-plaatsingen, voltooide taken en observaties, nieuwste eerst.
+  const recentActief = useMemo(() => {
+    const feed: { datum: string; icoon: React.ReactNode; tekst: string; doel: string }[] = [];
+    for (const z of tuin.zones) {
+      for (const p of z.plantPlaatsingen) {
+        feed.push({
+          datum: new Date(p.geplaatst).toISOString().slice(0, 10),
+          icoon: <Leaf size={13} className="text-moss-600" aria-hidden />,
+          tekst: `${p.wetenschappelijkeNaam} toegevoegd aan ${z.naam}`,
+          doel: "/tuinkaart",
+        });
+      }
+    }
+    for (const t of taken) {
+      if (t.status === "klaar" && t.voltooidOp) {
+        feed.push({
+          datum: t.voltooidOp,
+          icoon: <Check size={13} className="text-moss-600" aria-hidden />,
+          tekst: `Taak "${t.titel}" voltooid`,
+          doel: "/taken",
+        });
+      }
+    }
+    for (const o of observaties) {
+      feed.push({
+        datum: o.datum,
+        icoon: <BookOpen size={13} className="text-clay-600" aria-hidden />,
+        tekst: o.tekst,
+        doel: "/dagboek",
+      });
+    }
+    return feed.sort((a, b) => b.datum.localeCompare(a.datum)).slice(0, 5);
+  }, [tuin.zones, taken, observaties]);
+
   const tuinGezondheid = useMemo(() =>
     berekenTuinGezondheid(tuin, taken, plantCatalog), [tuin, taken, plantCatalog]);
 
@@ -167,33 +249,29 @@ export function DashboardPagina() {
 
   const aantalPlanten = tuin.zones.reduce((s, z) => s + z.plantPlaatsingen.length, 0);
 
-  // Mini bloeikalender: max 6 planten die in de komende 4 maanden bloeien
+  // Mini bloeikalender: bloeiende soorten per zone in de komende 4 maanden
   const miniBloeiRijen = useMemo(() => {
     const huidig = new Date().getMonth() + 1;
     const komendeMaanden = Array.from({ length: 4 }, (_, i) => ((huidig - 1 + i) % 12) + 1);
-    const map = new Map<string, { naam: string; maanden: Set<number>; kleur: string }>();
-    for (const zone of tuin.zones) {
-      for (const p of zone.plantPlaatsingen) {
-        const sleutel = p.wetenschappelijkeNaam.toLowerCase();
-        const plant = plantCatalog[sleutel];
-        if (!plant) continue;
-        const maanden = new Set(plant.bloei.maanden.waarde);
-        const bloeitBinnenkort = komendeMaanden.some((m) => maanden.has(m));
-        if (!bloeitBinnenkort) continue;
-        if (!map.has(sleutel)) {
-          const eersteKleur = plant.bloei.kleuren.waarde[0]?.toLowerCase() ?? "";
-          const kleur = ["purple","violet","lila","paars"].some((c) => eersteKleur.includes(c)) ? "#7c3aed"
-            : ["yellow","gold","geel"].some((c) => eersteKleur.includes(c)) ? "#f59e0b"
-            : ["orange","oranje"].some((c) => eersteKleur.includes(c)) ? "#f97316"
-            : ["pink","roze"].some((c) => eersteKleur.includes(c)) ? "#ec4899"
-            : ["red","rood"].some((c) => eersteKleur.includes(c)) ? "#dc2626"
-            : ["blue","blauw"].some((c) => eersteKleur.includes(c)) ? "#3b82f6"
-            : "#4a7c59";
-          map.set(sleutel, { naam: plant.identificatie.wetenschappelijkeNaam, maanden, kleur });
+    return tuin.zones
+      .filter((z) => z.plantPlaatsingen.length > 0)
+      .map((z) => {
+        const perMaand: Record<number, number> = Object.fromEntries(komendeMaanden.map((m) => [m, 0]));
+        const geteld = new Set<string>();
+        for (const p of z.plantPlaatsingen) {
+          const sleutel = p.wetenschappelijkeNaam.toLowerCase();
+          if (geteld.has(sleutel)) continue;
+          geteld.add(sleutel);
+          const plant = plantCatalog[sleutel];
+          if (!plant) continue;
+          for (const m of plant.bloei.maanden.waarde) {
+            if (m in perMaand) perMaand[m]++;
+          }
         }
-      }
-    }
-    return Array.from(map.values()).slice(0, 6);
+        return { naam: z.naam, perMaand };
+      })
+      .filter((r) => Object.values(r.perMaand).some((c) => c > 0))
+      .slice(0, 6);
   }, [tuin.zones, plantCatalog]);
 
   const [bewerkModus, setBewerkModus] = useState(false);
@@ -322,13 +400,34 @@ export function DashboardPagina() {
           {dezeWeek.length === 0 && achterstallig.length === 0 ? (
             <p className="text-caption text-[var(--gp-text-mute)] flex-1 flex items-center">Geen taken deze week.</p>
           ) : (
-            <ul className="space-y-1 flex-1">
-              {dezeWeek.slice(0, 4).map((t) => (
-                <li key={t.id} className="flex items-center gap-2 text-caption">
-                  <span className="w-10 shrink-0 text-[var(--gp-text-mute)]">{t.vervaldatum!.slice(5)}</span>
-                  <span className="truncate text-moss-900">{t.titel}</span>
-                </li>
-              ))}
+            <ul className="space-y-1.5 flex-1">
+              {dezeWeek.slice(0, 4).map((t) => {
+                const type = bepaalTaakType(t.titel);
+                const zoneNaam = t.zoneId ? tuin.zones.find((z) => z.id === t.zoneId)?.naam : null;
+                return (
+                  <li key={t.id} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={false}
+                      onChange={() => toggleStatus(t.id)}
+                      aria-label={`Vink af: ${t.titel}`}
+                      className="shrink-0 accent-moss-700 cursor-pointer"
+                    />
+                    <span className="shrink-0" aria-hidden>{TAAK_TYPE_ICOON[type]}</span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block truncate text-body-sm text-moss-900 leading-tight">{t.titel}</span>
+                      <span className="block text-caption text-[var(--gp-text-mute)] leading-tight">
+                        {t.vervaldatum!.slice(5)}{zoneNaam && ` · ${zoneNaam}`}
+                      </span>
+                    </span>
+                    {type !== "overig" && (
+                      <span className={`shrink-0 text-caption px-1.5 py-px rounded-full border ${TAAK_PILL_KLASSE[type]}`}>
+                        {TAAK_TYPE_LABEL[type]}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
               {dezeWeek.length > 4 && (
                 <li className="text-caption text-moss-600">+{dezeWeek.length - 4} meer</li>
               )}
@@ -344,21 +443,30 @@ export function DashboardPagina() {
           <h2 className="text-heading-sm text-[var(--gp-text-mute)] uppercase tracking-wide mb-3 flex items-center gap-2">
             <AlertTriangle size={14} aria-hidden /> Zones met aandacht
           </h2>
-          {zonesMetConflict.length === 0 && achterstallig.length === 0 ? (
+          {aandachtZones.length === 0 ? (
             <p className="text-caption text-moss-600 flex-1 flex items-center gap-1.5">
               <span className="inline-block w-2 h-2 rounded-full bg-moss-400" aria-hidden /> Geen aandachtspunten
             </p>
           ) : (
-            <ul className="space-y-1.5 flex-1">
-              {zonesMetConflict.map((z) => (
+            <ul className="space-y-2 flex-1">
+              {aandachtZones.slice(0, 3).map(({ zone: z, punten }) => (
                 <li key={z.id}>
                   <button onClick={() => navigate("/tuinkaart")}
-                    className="flex items-center gap-2 w-full text-left hover:text-moss-700">
-                    <span className="inline-block w-2 h-2 rounded-full bg-amber-400 shrink-0" aria-hidden />
-                    <span className="text-caption text-amber-800 truncate">{z.naam} — begeleidersconflict</span>
+                    className="flex items-center gap-2.5 w-full text-left hover:text-moss-700">
+                    <span className={`w-9 h-9 rounded-md shrink-0 flex items-center justify-center ${zoneGradient(z.grondsoort)}`} aria-hidden>
+                      <Sprout size={15} className="text-moss-700" />
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-body-sm font-medium text-moss-900 truncate leading-tight">{z.naam}</span>
+                      <span className="block text-caption text-amber-800 truncate leading-tight">{punten[0]}{punten.length > 1 && ` (+${punten.length - 1})`}</span>
+                    </span>
+                    <AlertTriangle size={13} className="text-amber-500 shrink-0" aria-hidden />
                   </button>
                 </li>
               ))}
+              {aandachtZones.length > 3 && (
+                <li className="text-caption text-moss-600">+{aandachtZones.length - 3} meer zones</li>
+              )}
             </ul>
           )}
           <button onClick={() => navigate("/tuinkaart")} className="mt-3 text-caption text-moss-600 hover:underline text-left">
@@ -415,7 +523,7 @@ export function DashboardPagina() {
           <div className="lg:col-span-2 gp-card-bordered">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-heading-sm text-[var(--gp-text-mute)] uppercase tracking-wide">
-                Bloei komende maanden
+                Bloei per zone · komende maanden
               </h2>
               <button onClick={() => navigate("/kalender")} className="text-caption text-moss-600 hover:underline">
                 Volledige kalender →
@@ -518,27 +626,26 @@ export function DashboardPagina() {
         </div>
       </div>
 
-      {/* ── Recent actief feed (meldingen) ── */}
-      {(achterstallig.length > 0 || actieveZone) && (
-        <div className="mb-6 space-y-2">
-          <h2 className="text-heading-sm text-[var(--gp-text-mute)] uppercase tracking-wide mb-2">Recent actief</h2>
-          {actieveZone && (
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-md border border-[var(--gp-border)] bg-white text-body-sm">
-              <MapPin size={14} className="text-moss-500 shrink-0" aria-hidden />
-              <span className="flex-1 text-moss-900">Actieve zone: <span className="font-medium">{actieveZone.naam}</span></span>
-              <button onClick={() => navigate("/tuinkaart")} className="text-caption text-moss-600 hover:underline shrink-0">Bekijk →</button>
-            </div>
-          )}
-          {achterstallig.length > 0 && (
-            <button onClick={() => navigate("/taken")}
-              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-md border border-[var(--gp-rust-300)] bg-[var(--gp-rust-100)] text-left hover:shadow-sm transition-shadow">
-              <AlertTriangle size={14} className="text-[var(--gp-rust-700)] shrink-0" aria-hidden />
-              <span className="flex-1 text-body-sm text-[var(--gp-rust-700)] font-medium">
-                {achterstallig.length} achterstallige taak{achterstallig.length !== 1 ? "en" : ""}
-              </span>
-              <ChevronRight size={14} className="text-[var(--gp-rust-500)] shrink-0" aria-hidden />
-            </button>
-          )}
+      {/* ── Recent actief in je tuin ── */}
+      {recentActief.length > 0 && (
+        <div className="mb-6">
+          <h2 className="text-heading-sm text-[var(--gp-text-mute)] uppercase tracking-wide mb-2">Recent actief in je tuin</h2>
+          <ul className="space-y-1.5">
+            {recentActief.map((e, i) => (
+              <li key={i}>
+                <button
+                  onClick={() => navigate(e.doel)}
+                  className="flex items-center gap-3 w-full px-3 py-2 rounded-md border border-[var(--gp-border)] bg-white text-left hover:shadow-sm transition-shadow"
+                >
+                  <span className="w-7 h-7 rounded-full bg-[var(--gp-surface-alt)] border border-[var(--gp-border)] flex items-center justify-center shrink-0" aria-hidden>
+                    {e.icoon}
+                  </span>
+                  <span className="flex-1 min-w-0 text-body-sm text-moss-900 truncate">{e.tekst}</span>
+                  <span className="text-caption text-[var(--gp-text-mute)] shrink-0">{e.datum}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

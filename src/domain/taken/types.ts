@@ -52,4 +52,6 @@ export interface Taak {
   status: TaakStatus;
   aangemaakt: Date;
   herhaling: HerhalingConfig | null;
+  /** YYYY-MM-DD waarop de taak werd afgevinkt; optioneel voor backwards-compat. */
+  voltooidOp?: string | null;
 }

@@ -50,7 +50,9 @@ export const useTakenStore = create<TakenStore>()(
             };
             return {
               taken: staat.taken
-                .map((t) => t.id === taakId ? { ...t, status: "klaar" as const } : t)
+                .map((t) => t.id === taakId
+                  ? { ...t, status: "klaar" as const, voltooidOp: new Date().toISOString().slice(0, 10) }
+                  : t)
                 .concat(nieuweTaak),
             };
           }
@@ -58,7 +60,9 @@ export const useTakenStore = create<TakenStore>()(
           return {
             taken: staat.taken.map((t) =>
               t.id === taakId
-                ? { ...t, status: t.status === "open" ? "klaar" : "open" }
+                ? t.status === "open"
+                  ? { ...t, status: "klaar" as const, voltooidOp: new Date().toISOString().slice(0, 10) }
+                  : { ...t, status: "open" as const, voltooidOp: null }
                 : t,
             ),
           };
