@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { Zone } from "../domain/tuin/types";
 import type { AutoFillResultaat } from "../domain/plant/types";
 import { berekenBegeleidersCheck } from "../domain/tuin/berekenBegeleidersCheck";
+import { zoneOppervlakte } from "../domain/tuin/tuin";
 
 export type OverlayTab = "kaart" | "zon" | "irrigatie" | "bodem";
 
@@ -14,12 +15,6 @@ const VB_W = 800;
 const VB_H = 440;
 const FOOT = 44;
 const GAP = 10;
-
-export function zoneOppervlakte(zone: Zone): number | null {
-  return zone.breedte_m != null && zone.diepte_m != null
-    ? zone.breedte_m * zone.diepte_m
-    : null;
-}
 
 interface Tegel { zone: Zone; x: number; y: number; w: number; h: number; index: number }
 

@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import type { PlantPlaatsing, Border } from "../domain/tuin/types";
+import type { PlantPlaatsing, PlantGezondheid, Border } from "../domain/tuin/types";
 import type { AutoFillResultaat } from "../domain/plant/types";
 import { berekenBegeleidersCheck, type BegeleidersResultaat } from "../domain/tuin/berekenBegeleidersCheck";
 
@@ -266,21 +266,73 @@ interface Props {
   breedte?: number;
   hoogte?: number;
   onPlantClick?: (wetNaam: string) => void;
+  /** Echte zone-afmetingen in meter — activeert de op-schaal-modus (cirkel = volwassen breedte). */
+  zoneBreedteM?: number | null;
+  zoneDiepteM?: number | null;
+  /** Persisteert de sleep-positie (in meter t.o.v. linkerbovenhoek). Alleen gebruikt op schaal. */
+  onPositieWijzig?: (plaatsingId: string, x_m: number, y_m: number) => void;
+  onGezondheidWijzig?: (plaatsingId: string, gezondheid: PlantGezondheid | null) => void;
 }
+
+const GEZONDHEID_RING: Record<PlantGezondheid, string | null> = {
+  gezond: null,
+  zorgwekkend: "#D97706",
+  dood: "#9C3D2E",
+};
 
 export function ZoneCanvas({
   plaatsingen, catalog, borders = [], breedte = 560, hoogte = 320, onPlantClick,
+  zoneBreedteM = null, zoneDiepteM = null, onPositieWijzig, onGezondheidWijzig,
 }: Props) {
   const [actieveTab, setActieveTab] = useState<Tab>("2d");
   const [seizoenMaand, setSeizoenMaand] = useState(new Date().getMonth() + 1);
   const [companionSelectie, setCompanionSelectie] = useState<string | null>(null);
   const [geselecteerdeId, setGeselecteerdeId] = useState<string | null>(null);
 
-  const heeftBorders = borders.length > 0;
+  // Op-schaal-modus: het canvas toont de zone op werkelijke verhouding; 1 m
+  // wordt een vast aantal px. Zonder afmetingen valt alles terug op de
+  // schematische chip-weergave (geen verzonnen schaal).
+  const schaalInfo = useMemo(() => {
+    if (zoneBreedteM == null || zoneDiepteM == null || zoneBreedteM <= 0 || zoneDiepteM <= 0) return null;
+    const schaal = Math.min((breedte - 2 * BUITEN) / zoneBreedteM, (hoogte - 2 * BUITEN) / zoneDiepteM);
+    const w = zoneBreedteM * schaal;
+    const h = zoneDiepteM * schaal;
+    return { schaal, offX: (breedte - w) / 2, offY: (hoogte - h) / 2, w, h };
+  }, [zoneBreedteM, zoneDiepteM, breedte, hoogte]);
+  const opSchaal = schaalInfo !== null;
+
+  const heeftBorders = !opSchaal && borders.length > 0;
   const heeftZonderBorder = heeftBorders && plaatsingen.some((p) => !p.borderId);
   const secties = heeftBorders ? berekenSecties(borders, heeftZonderBorder, breedte, hoogte) : [];
 
+  // Straal (px) van de volwassen plant op schaal; onbekende breedte → 40 cm, gemarkeerd als geschat.
+  const plantStraal = (p: PlantPlaatsing): { r: number; geschat: boolean } => {
+    if (!schaalInfo) return { r: CHIP_R / 2, geschat: false };
+    const cm = catalog[p.wetenschappelijkeNaam.toLowerCase()]?.groei.volwassenBreedte_cm.waarde?.max ?? null;
+    const diameterM = (cm ?? 40) / 100;
+    const r = Math.max(9, Math.min(Math.min(schaalInfo.w, schaalInfo.h) / 2, (diameterM / 2) * schaalInfo.schaal));
+    return { r, geschat: cm === null };
+  };
+
   const [posities, setPosities] = useState<Record<string, Positie>>(() => {
+    if (schaalInfo) {
+      // Persisteerde meter-posities waar aanwezig; rest in een nette cirkel.
+      const zonder = plaatsingen.filter((p) => p.x_m === null);
+      const cx = schaalInfo.offX + schaalInfo.w / 2;
+      const cy = schaalInfo.offY + schaalInfo.h / 2;
+      const straal = Math.min(schaalInfo.w, schaalInfo.h) * 0.32;
+      const fallback = new Map(zonder.map((p, i) => {
+        if (zonder.length === 1) return [p.id, { x: cx, y: cy }] as const;
+        const hoek = (2 * Math.PI * i) / zonder.length - Math.PI / 2;
+        return [p.id, { x: cx + straal * Math.cos(hoek), y: cy + straal * Math.sin(hoek) }] as const;
+      }));
+      return Object.fromEntries(plaatsingen.map((p) => [
+        p.id,
+        p.x_m !== null && p.y_m !== null
+          ? { x: schaalInfo.offX + p.x_m * schaalInfo.schaal, y: schaalInfo.offY + p.y_m * schaalInfo.schaal }
+          : fallback.get(p.id)!,
+      ]));
+    }
     if (!heeftBorders) {
       const straal = Math.min(breedte, hoogte) * 0.32;
       const cx = breedte / 2; const cy = hoogte / 2;
@@ -310,7 +362,12 @@ export function ZoneCanvas({
     if (!sleep) return;
     let nx = sleep.startPos.x + (mx - sleep.startMuis.x);
     let ny = sleep.startPos.y + (my - sleep.startMuis.y);
-    if (heeftBorders) {
+    if (schaalInfo) {
+      const p = plaatsingen.find((p) => p.id === sleep.id);
+      const { r } = p ? plantStraal(p) : { r: CHIP_R / 2 };
+      nx = Math.max(schaalInfo.offX + r, Math.min(schaalInfo.offX + schaalInfo.w - r, nx));
+      ny = Math.max(schaalInfo.offY + r, Math.min(schaalInfo.offY + schaalInfo.h - r, ny));
+    } else if (heeftBorders) {
       const p = plaatsingen.find((p) => p.id === sleep.id);
       const s = p ? getSectie(p) : null;
       if (s) { const c = clampInSectie(nx, ny, s); nx = c.x; ny = c.y; }
@@ -321,9 +378,22 @@ export function ZoneCanvas({
     setPosities((prev) => ({ ...prev, [sleep.id]: { x: nx, y: ny } }));
   };
 
+  // Op schaal wordt de positie bij het loslaten in meters gepersisteerd.
+  const eindSleep = () => {
+    if (sleep && schaalInfo && onPositieWijzig) {
+      const pos = posities[sleep.id];
+      if (pos) {
+        const x_m = Math.round(((pos.x - schaalInfo.offX) / schaalInfo.schaal) * 100) / 100;
+        const y_m = Math.round(((pos.y - schaalInfo.offY) / schaalInfo.schaal) * 100) / 100;
+        onPositieWijzig(sleep.id, x_m, y_m);
+      }
+    }
+    setSleep(null);
+  };
+
   const handleMouseDown = (e: React.MouseEvent, id: string) => { e.preventDefault(); startSleep(id, e.clientX, e.clientY); };
   const handleMouseMove = (e: React.MouseEvent) => bewegSleep(e.clientX, e.clientY);
-  const handleMouseUp = () => setSleep(null);
+  const handleMouseUp = () => eindSleep();
   const handleTouchStart = (e: React.TouchEvent, id: string) => { e.preventDefault(); const t = e.touches[0]; startSleep(id, t.clientX, t.clientY); };
   const handleTouchMove = (e: React.TouchEvent) => { e.preventDefault(); const t = e.touches[0]; bewegSleep(t.clientX, t.clientY); };
 
@@ -332,6 +402,30 @@ export function ZoneCanvas({
     [plaatsingen, catalog],
   );
   const analyse = useMemo(() => berekenAnalyse(plaatsingen, catalog), [plaatsingen, catalog]);
+
+  // Overlap tussen volwassen-breedte-cirkels (alleen zinvol op schaal).
+  // Licht: cirkels raken elkaar; te dicht: middelpunten < 60% van de som van de stralen.
+  const overlaps = useMemo(() => {
+    if (!schaalInfo) return [];
+    const markers: { x: number; y: number; ernstig: boolean }[] = [];
+    for (let i = 0; i < plaatsingen.length; i++) {
+      for (let j = i + 1; j < plaatsingen.length; j++) {
+        const a = posities[plaatsingen[i].id];
+        const b = posities[plaatsingen[j].id];
+        if (!a || !b) continue;
+        const { r: ra } = plantStraal(plaatsingen[i]);
+        const { r: rb } = plantStraal(plaatsingen[j]);
+        const dist = Math.hypot(a.x - b.x, a.y - b.y);
+        if (dist < ra + rb) {
+          markers.push({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, ernstig: dist < 0.6 * (ra + rb) });
+        }
+      }
+    }
+    return markers;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schaalInfo, plaatsingen, posities, catalog]);
+  const overlapLicht = overlaps.filter((o) => !o.ernstig).length;
+  const overlapErnstig = overlaps.filter((o) => o.ernstig).length;
 
   const chipKleurVoor = (p: PlantPlaatsing, i: number): string => {
     if (actieveTab === "seizoenen") {
@@ -482,16 +576,31 @@ export function ZoneCanvas({
           onMouseUp={isDraggable ? handleMouseUp : undefined}
           onMouseLeave={isDraggable ? handleMouseUp : undefined}
           onTouchMove={isDraggable ? handleTouchMove : undefined}
-          onTouchEnd={isDraggable ? () => setSleep(null) : undefined}
-          onTouchCancel={isDraggable ? () => setSleep(null) : undefined}
+          onTouchEnd={isDraggable ? eindSleep : undefined}
+          onTouchCancel={isDraggable ? eindSleep : undefined}
         >
           <svg width={breedte} height={hoogte} className="absolute inset-0 pointer-events-none" aria-hidden>
             <defs>
-              <pattern id="gp-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="var(--gp-border)" strokeWidth="0.5" />
+              <pattern id="gp-grid" width={schaalInfo ? schaalInfo.schaal : 40} height={schaalInfo ? schaalInfo.schaal : 40} patternUnits="userSpaceOnUse">
+                <path
+                  d={`M ${schaalInfo ? schaalInfo.schaal : 40} 0 L 0 0 0 ${schaalInfo ? schaalInfo.schaal : 40}`}
+                  fill="none" stroke="var(--gp-border)" strokeWidth="0.5"
+                />
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#gp-grid)" />
+            {schaalInfo && (
+              <g>
+                {/* Zone-omtrek op schaal; raster = 1 m */}
+                <rect
+                  x={schaalInfo.offX} y={schaalInfo.offY} width={schaalInfo.w} height={schaalInfo.h}
+                  rx={10} fill="#f0faf0" fillOpacity={0.6} stroke="#4a8850" strokeWidth={1.5} strokeDasharray="6 4"
+                />
+                <text x={schaalInfo.offX + 8} y={schaalInfo.offY + 16} fontSize={10} fontFamily="Inter, sans-serif" fill="#5b6b5e">
+                  {zoneBreedteM} × {zoneDiepteM} m · raster = 1 m
+                </text>
+              </g>
+            )}
             {secties.map((s) => (
               <g key={s.borderId ?? "_none"}>
                 <rect x={s.x} y={s.y} width={s.w} height={s.h} rx={6} fill={s.svgVul} stroke={s.svgRand} strokeWidth={1.5} />
@@ -515,6 +624,9 @@ export function ZoneCanvas({
             const inBloei = plant?.bloei.maanden.waarde.includes(seizoenMaand) ?? false;
             const dormant = actieveTab === "seizoenen" && !inBloei && (seizoenMaand <= 2 || seizoenMaand >= 11);
             const isGeselecteerd = geselecteerdeId === p.id;
+            const ringKleur = p.gezondheid ? GEZONDHEID_RING[p.gezondheid] : null;
+            const { r, geschat } = plantStraal(p);
+            const initialen = naam.slice(0, 2);
 
             return (
               <div
@@ -536,19 +648,54 @@ export function ZoneCanvas({
                   }
                 }}
               >
-                <div
-                  style={{ backgroundColor: kleur, minWidth: 56, maxWidth: 80 }}
-                  className={`flex items-center justify-center px-2 py-1 rounded-full shadow-sm border-2 border-white text-white
-                    ${isGeselecteerd ? "ring-2 ring-moss-900 ring-offset-1" : ""}
-                    ${isDragging ? "shadow-lg scale-105" : isDraggable ? "hover:scale-105" : "hover:brightness-110"} transition-transform`}
-                >
-                  <span className="text-center leading-tight line-clamp-2" style={{ fontSize: 9, fontWeight: 500 }}>
-                    {naam}
-                  </span>
-                </div>
+                {opSchaal ? (
+                  <div
+                    style={{
+                      width: 2 * r, height: 2 * r,
+                      backgroundColor: kleur,
+                      borderStyle: geschat ? "dashed" : "solid",
+                      ...(ringKleur ? { outline: `3px solid ${ringKleur}`, outlineOffset: 2 } : {}),
+                    }}
+                    title={`${naam}${geschat ? " · breedte onbekend, getoond als 40 cm" : ""}${p.gezondheid ? ` · ${p.gezondheid}` : ""}`}
+                    className={`flex items-center justify-center rounded-full border-2 border-white/90 text-white
+                      ${isGeselecteerd ? "ring-2 ring-moss-900 ring-offset-1" : ""}
+                      ${isDragging ? "shadow-lg" : ""} transition-shadow`}
+                  >
+                    <span className="text-center leading-tight overflow-hidden px-1" style={{ fontSize: 9, fontWeight: 600 }}>
+                      {2 * r >= 44 ? naam : initialen}
+                    </span>
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      backgroundColor: kleur, minWidth: 56, maxWidth: 80,
+                      ...(ringKleur ? { outline: `3px solid ${ringKleur}`, outlineOffset: 2 } : {}),
+                    }}
+                    className={`flex items-center justify-center px-2 py-1 rounded-full shadow-sm border-2 border-white text-white
+                      ${isGeselecteerd ? "ring-2 ring-moss-900 ring-offset-1" : ""}
+                      ${isDragging ? "shadow-lg scale-105" : isDraggable ? "hover:scale-105" : "hover:brightness-110"} transition-transform`}
+                  >
+                    <span className="text-center leading-tight line-clamp-2" style={{ fontSize: 9, fontWeight: 500 }}>
+                      {naam}
+                    </span>
+                  </div>
+                )}
               </div>
             );
           })}
+
+          {/* Overlap-markers tussen volwassen-breedte-cirkels */}
+          {opSchaal && actieveTab === "2d" && overlaps.map((o, i) => (
+            <div
+              key={i}
+              aria-hidden
+              className="absolute w-3 h-3 rounded-full border-2 border-white pointer-events-none"
+              style={{
+                left: o.x, top: o.y, transform: "translate(-50%, -50%)", zIndex: 5,
+                backgroundColor: o.ernstig ? "#9C3D2E" : "#D97706",
+              }}
+            />
+          ))}
 
           {/* Seizoens-legende — bloei · blad · winterrust */}
           {actieveTab === "seizoenen" && (
@@ -570,8 +717,23 @@ export function ZoneCanvas({
 
           {isDraggable && (
             <p className="absolute bottom-2 right-3 text-caption text-[var(--gp-text-mute)] pointer-events-none" aria-hidden>
-              Sleep om te herpositioneren
+              {opSchaal ? "Cirkel = volwassen breedte · sleep om te verplaatsen" : "Sleep om te herpositioneren"}
             </p>
+          )}
+
+          {/* Overlap-legenda (op schaal) */}
+          {opSchaal && actieveTab === "2d" && (
+            <div className="absolute bottom-2 left-3 flex flex-wrap gap-2 pointer-events-none">
+              <span className="flex items-center gap-1 text-caption bg-white/80 rounded px-1.5 py-0.5">
+                <span className="w-2.5 h-2.5 rounded-full inline-block bg-[#4a8850]" /> Geen overlap
+              </span>
+              <span className="flex items-center gap-1 text-caption bg-white/80 rounded px-1.5 py-0.5">
+                <span className="w-2.5 h-2.5 rounded-full inline-block bg-[#D97706]" /> Licht ({overlapLicht})
+              </span>
+              <span className="flex items-center gap-1 text-caption bg-white/80 rounded px-1.5 py-0.5">
+                <span className="w-2.5 h-2.5 rounded-full inline-block bg-[#9C3D2E]" /> Te dicht ({overlapErnstig})
+              </span>
+            </div>
           )}
         </div>
       )}
@@ -595,6 +757,27 @@ export function ZoneCanvas({
                 {breedteCm != null && <span>Breedte tot {breedteCm} cm</span>}
                 {hoogteCm != null && <span>Hoogte tot {hoogteCm} cm</span>}
               </div>
+              {onGezondheidWijzig && (
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className="text-caption text-[var(--gp-text-mute)]">Conditie:</span>
+                  {(["gezond", "zorgwekkend", "dood"] as PlantGezondheid[]).map((g) => (
+                    <button
+                      key={g}
+                      onClick={() => onGezondheidWijzig(p.id, p.gezondheid === g ? null : g)}
+                      className={`text-caption px-2 py-0.5 rounded-full border transition-colors
+                        ${p.gezondheid === g
+                          ? g === "gezond"
+                            ? "bg-moss-100 border-moss-400 text-moss-800 font-medium"
+                            : g === "zorgwekkend"
+                            ? "bg-amber-100 border-amber-400 text-amber-800 font-medium"
+                            : "bg-rust-50 border-rust-300 text-rust-700 font-medium"
+                          : "border-[var(--gp-border)] text-[var(--gp-text-mute)] hover:text-moss-700"}`}
+                    >
+                      {g === "gezond" ? "Gezond" : g === "zorgwekkend" ? "Zorgwekkend" : "Dood"}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             {onPlantClick && (
               <button

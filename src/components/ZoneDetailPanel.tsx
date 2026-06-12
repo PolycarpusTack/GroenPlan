@@ -415,7 +415,18 @@ export function ZoneDetailPanel({ zone, plantCatalog, onVerwijderPlant, onBewerk
             catalog={plantCatalog}
             borders={zone.borders}
             onPlantClick={onPlantClick}
+            zoneBreedteM={zone.breedte_m}
+            zoneDiepteM={zone.diepte_m}
+            onPositieWijzig={(plaatsingId, x_m, y_m) =>
+              useTuinStore.getState().setPlantPositie(zone.id, plaatsingId, x_m, y_m)}
+            onGezondheidWijzig={(plaatsingId, gezondheid) =>
+              useTuinStore.getState().setPlantGezondheid(zone.id, plaatsingId, gezondheid)}
           />
+          {zone.breedte_m == null && (
+            <p className="mt-1.5 text-caption text-[var(--gp-text-mute)]">
+              Tip: geef de zone afmetingen (bewerk de zone) om planten op werkelijke schaal te zien, met overlap-controle.
+            </p>
+          )}
         </div>
       )}
 

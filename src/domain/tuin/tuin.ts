@@ -221,6 +221,12 @@ export function setPlantGezondheid(
   };
 }
 
+export function zoneOppervlakte(zone: Zone): number | null {
+  return zone.breedte_m != null && zone.diepte_m != null
+    ? zone.breedte_m * zone.diepte_m
+    : null;
+}
+
 export function zoekZone(tuin: Tuin, zoneId: string): Zone | undefined {
   return tuin.zones.find((z) => z.id === zoneId);
 }
