@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { NavLink } from "react-router-dom";
-import { Leaf, LayoutDashboard, Search, Map, CheckSquare, CalendarDays, BookOpen, ChevronUp, Layers, Shovel, Bean, HelpCircle } from "lucide-react";
+import { Leaf, LayoutDashboard, Search, Map, CheckSquare, CalendarDays, BookOpen, ChevronUp, Layers, Shovel, Bean, HelpCircle, Settings } from "lucide-react";
 import { useTakenStore } from "../store/taken-store";
 import { useTuinStore } from "../store/tuin-store";
 
@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { naar: "/zaadbank", label: "Zaadbank", Icoon: Bean },
   { naar: "/veld", label: "Veld-modus", Icoon: Shovel },
   { naar: "/gids", label: "Gids", Icoon: HelpCircle },
+  { naar: "/instellingen", label: "Instellingen", Icoon: Settings },
 ] as const;
 
 const VANDAAG = new Date().toISOString().slice(0, 10);

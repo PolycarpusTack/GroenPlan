@@ -4,9 +4,11 @@ import { tuinontwerpHandler } from "./tuinontwerp-handler";
 import { coachHandler } from "./coach-handler";
 import { plagenHandler } from "./plagen-handler";
 import { plantnetHandler } from "./plantnet-handler";
+import { statusHandler } from "./status-handler";
 
 export const apiRoutes: ApiRoute[] = [
   { pad: "/api/autofill", methode: "GET", handler: autofillHandler },
+  { pad: "/api/status", methode: "GET", handler: statusHandler },
   { pad: "/api/tuinontwerp", methode: "POST", handler: tuinontwerpHandler },
   { pad: "/api/coach", methode: "POST", handler: coachHandler },
   { pad: "/api/plagen", methode: "POST", handler: plagenHandler },

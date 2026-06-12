@@ -21,6 +21,7 @@ const BodemMetingenPagina = lazy(() => import("./pages/BodemMetingen").then((m) 
 const ZaadbankPagina = lazy(() => import("./pages/Zaadbank").then((m) => ({ default: m.ZaadbankPagina })));
 const VeldModusPagina = lazy(() => import("./pages/VeldModus").then((m) => ({ default: m.VeldModusPagina })));
 const GidsPagina = lazy(() => import("./pages/Gids").then((m) => ({ default: m.GidsPagina })));
+const InstellingenPagina = lazy(() => import("./pages/Instellingen").then((m) => ({ default: m.InstellingenPagina })));
 
 function PaginaLader() {
   return (
@@ -52,6 +53,7 @@ function App() {
                 <Route path="/zaadbank" element={<ZaadbankPagina />} />
                 <Route path="/veld" element={<VeldModusPagina />} />
                 <Route path="/gids" element={<GidsPagina />} />
+                <Route path="/instellingen" element={<InstellingenPagina />} />
                 <Route path="*" element={<NietGevonden />} />
               </Routes>
             </Suspense>

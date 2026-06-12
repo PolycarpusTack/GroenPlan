@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Search, Map, CheckSquare, Shovel, Menu,
-  Library, CalendarDays, BookOpen, Layers, Bean, HelpCircle, type LucideIcon,
+  Library, CalendarDays, BookOpen, Layers, Bean, HelpCircle, Settings, type LucideIcon,
 } from "lucide-react";
 import { useTakenStore } from "../store/taken-store";
 import { MobileSheet } from "./MobileSheet";
@@ -23,6 +23,7 @@ const MEER_ITEMS: { naar: string; label: string; Icoon: LucideIcon }[] = [
   { naar: "/bodem", label: "Bodem", Icoon: Layers },
   { naar: "/zaadbank", label: "Zaadbank", Icoon: Bean },
   { naar: "/gids", label: "Gids", Icoon: HelpCircle },
+  { naar: "/instellingen", label: "Instellingen", Icoon: Settings },
 ];
 
 const VANDAAG = new Date().toISOString().slice(0, 10);

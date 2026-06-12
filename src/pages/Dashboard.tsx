@@ -1,8 +1,8 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Pencil, Check, X,
-  AlertTriangle, CalendarCheck, BookOpen, Download, Upload,
+  AlertTriangle, CalendarCheck, BookOpen,
   Plus, Camera, Bug, Bot, Sprout, Leaf,
   Scissors, Droplets, Search, Apple,
 } from "lucide-react";
@@ -173,9 +173,6 @@ export function DashboardPagina() {
   const taken = useTakenStore((s) => s.taken);
   const toggleStatus = useTakenStore((s) => s.toggleStatus);
   const observaties = useDagboekStore((s) => s.observaties);
-  const laadTuin = useTuinStore((s) => s.laadTuin);
-  const laadTaken = useTakenStore((s) => s.laadTaken);
-  const laadObservaties = useDagboekStore((s) => s.laadObservaties);
 
   const weerGemeente = tuin.zones.find((z) => z.gemeente)?.gemeente ?? null;
   const seizoen = huidigSeizoen();
@@ -278,9 +275,6 @@ export function DashboardPagina() {
   const [bewerkNaam, setBewerkNaam] = useState(tuin.naam);
   const [bewerkHardheid, setBewerkHardheid] = useState(String(tuin.hardheid));
   const [fout, setFout] = useState<string | null>(null);
-  const [importFout, setImportFout] = useState<string | null>(null);
-  const [importOk, setImportOk] = useState(false);
-  const importRef = useRef<HTMLInputElement>(null);
 
   const openBewerken = () => { setBewerkNaam(tuin.naam); setBewerkHardheid(String(tuin.hardheid)); setFout(null); setBewerkModus(true); };
   const opslaan = () => {
@@ -291,32 +285,6 @@ export function DashboardPagina() {
     hernoem(naam); setHardheid(hardheid); setBewerkModus(false);
   };
   const annuleer = () => { setBewerkModus(false); setFout(null); };
-
-  const exporteer = () => {
-    const data = JSON.stringify({ versie: 2, geexporteerd: new Date().toISOString(), tuin: useTuinStore.getState().tuin, plantCatalog: useTuinStore.getState().plantCatalog, taken: useTakenStore.getState().taken, observaties: useDagboekStore.getState().observaties }, null, 2);
-    const blob = new Blob([data], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `groenplan-backup-${vandaag}.json`; a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const handleImportBestand = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const bestand = e.target.files?.[0];
-    if (!bestand) return;
-    setImportFout(null); setImportOk(false);
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const json = JSON.parse(ev.target?.result as string);
-        if (!json.tuin || !json.taken) throw new Error("Ongeldig backup-bestand.");
-        laadTuin(json.tuin, json.plantCatalog ?? {}); laadTaken(json.taken);
-        if (json.observaties) laadObservaties(json.observaties);
-        setImportOk(true);
-      } catch { setImportFout("Kon bestand niet inlezen. Controleer of dit een geldig GroenPlan-backup is."); }
-      if (importRef.current) importRef.current.value = "";
-    };
-    reader.readAsText(bestand);
-  };
 
   return (
     <div className="p-6 md:p-8 max-w-5xl">
@@ -649,21 +617,11 @@ export function DashboardPagina() {
         </div>
       )}
 
-      {/* ── Gegevens export/import ── */}
+      {/* ── Gegevens → Instellingen ── */}
       <div className="pt-6 border-t border-[var(--gp-border)]">
-        <h2 className="text-heading-sm text-[var(--gp-text-mute)] uppercase tracking-wide mb-3">Gegevens</h2>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={exporteer} className="flex items-center gap-2 text-body-sm">
-            <Download size={14} aria-hidden /> Exporteer backup
-          </Button>
-          <Button variant="secondary" onClick={() => { setImportFout(null); setImportOk(false); importRef.current?.click(); }}
-            className="flex items-center gap-2 text-body-sm">
-            <Upload size={14} aria-hidden /> Importeer backup
-          </Button>
-          <input ref={importRef} type="file" accept=".json,application/json" className="hidden" onChange={handleImportBestand} />
-        </div>
-        {importFout && <p role="alert" className="mt-3 text-body-sm text-[var(--gp-rust-700)] bg-[var(--gp-rust-100)] px-3 py-2 rounded-md">{importFout}</p>}
-        {importOk && <p role="status" className="mt-3 text-body-sm text-moss-700 bg-moss-50 px-3 py-2 rounded-md border border-moss-200">Gegevens succesvol geladen.</p>}
+        <button onClick={() => navigate("/instellingen")} className="text-caption text-moss-600 hover:underline">
+          Backup, AI-diensten en gegevensbeheer → Instellingen
+        </button>
       </div>
     </div>
   );

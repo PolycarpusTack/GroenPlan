@@ -57,6 +57,7 @@ const ROUTES: Array<[string, string]> = [
   ["/zaadbank", "Zaadbank"],
   ["/gids", "Gids"],
   ["/veld", "Veld-modus"],
+  ["/instellingen", "Instellingen"],
 ];
 
 describe("routes — lazy-loading & navigatie", () => {
