@@ -16,7 +16,7 @@ function maakPlant(naam: string, breedteCm: number | null): AutoFillResultaat {
     },
     groei: {
       volwassenHoogte_cm: { waarde: null, bron: "unknown" },
-      volwassenBreedte_cm: { waarde: breedteCm !== null ? { min: breedteCm, max: breedteCm } : null, bron: breedteCm !== null ? "ai" : "unknown" },
+      volwassenBreedte_cm: { waarde: breedteCm !== null ? { min: breedteCm, max: breedteCm } : null, bron: breedteCm !== null ? "RHS" : "unknown" },
       plantafstand_cm: { waarde: null, bron: "unknown" },
       groeisnelheid: { waarde: null, bron: "unknown" },
     },
