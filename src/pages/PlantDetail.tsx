@@ -16,7 +16,7 @@ import { Button } from "../components/ui";
 import type { ObservatieType } from "../domain/dagboek/types";
 import type { AutoFillBron, VeldMetBron } from "../domain/plant/types";
 
-type Tabblad = "overzicht" | "onderhoud" | "journal" | "taken" | "bronnen" | "combinaties";
+type Tabblad = "overzicht" | "onderhoud" | "journal" | "taken" | "bronnen" | "combinaties" | "problemen";
 
 const ALLE_OBSERVATIE_TYPES: ObservatieType[] = [
   "bloei", "groei", "plaag", "ziekte", "snoei", "bemesting", "overwintering", "overig",
@@ -71,6 +71,7 @@ const TABS: { id: Tabblad; label: string }[] = [
   { id: "taken",       label: "Taken"        },
   { id: "bronnen",     label: "Bronnen"      },
   { id: "combinaties", label: "Combinaties"  },
+  { id: "problemen",   label: "Problemen"    },
 ];
 
 interface BronRij {
@@ -129,6 +130,10 @@ export function PlantDetailPagina() {
       (o) => o.wetenschappelijkeNaam?.toLowerCase() === sleutel,
     );
   }, [alleObservaties, wetNaam]);
+  const probleemObservaties = useMemo(
+    () => plantObservaties.filter((o) => o.type === "plaag" || o.type === "ziekte"),
+    [plantObservaties],
+  );
 
   const [actieveTab, setActieveTab] = useState<Tabblad>("overzicht");
 
@@ -364,6 +369,8 @@ export function PlantDetailPagina() {
               ? plantObservaties.length
               : tab.id === "taken" && openTaken.length > 0
               ? openTaken.length
+              : tab.id === "problemen" && probleemObservaties.length > 0
+              ? probleemObservaties.length
               : null;
           return (
             <button
@@ -562,40 +569,6 @@ export function PlantDetailPagina() {
             </OnderhoudKaart>
           ) : (
             <LegeKaart tekst="Geen overwinteringsinformatie beschikbaar." />
-          )}
-
-          {/* Plagen & Ziekten */}
-          {(ecologie.plagen.waarde.length > 0 || ecologie.ziekten.waarde.length > 0) && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <AlertTriangle size={15} className="text-amber-600" aria-hidden />
-                <h3 className="text-heading-sm text-amber-900">Plagen &amp; Ziekten</h3>
-              </div>
-              {ecologie.plagen.waarde.length > 0 && (
-                <div className="mb-3">
-                  <p className="text-caption text-amber-700 uppercase tracking-wide mb-1.5">Plagen</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {ecologie.plagen.waarde.map((p) => (
-                      <span key={p} className="text-caption bg-amber-100 text-amber-800 border border-amber-200 rounded px-2 py-0.5">
-                        {p}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {ecologie.ziekten.waarde.length > 0 && (
-                <div>
-                  <p className="text-caption text-amber-700 uppercase tracking-wide mb-1.5">Ziekten</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {ecologie.ziekten.waarde.map((z) => (
-                      <span key={z} className="text-caption bg-amber-100 text-amber-800 border border-amber-200 rounded px-2 py-0.5">
-                        {z}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
           )}
 
           {/* Veiligheid */}
@@ -1092,6 +1065,94 @@ export function PlantDetailPagina() {
               </div>
             </Section>
           )}
+        </div>
+      )}
+
+      {/* ─────────────── PROBLEMEN ─────────────── */}
+      {actieveTab === "problemen" && (
+        <div className="space-y-4">
+          {/* Bekende plagen & ziekten (uit de catalogusdata, met bron) */}
+          {ecologie.plagen.waarde.length > 0 || ecologie.ziekten.waarde.length > 0 ? (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle size={15} className="text-amber-600" aria-hidden />
+                <h3 className="text-heading-sm text-amber-900">Bekende plagen &amp; ziekten</h3>
+              </div>
+              {ecologie.plagen.waarde.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-caption text-amber-700 uppercase tracking-wide mb-1.5">Plagen</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ecologie.plagen.waarde.map((p) => (
+                      <span key={p} className="text-caption bg-amber-100 text-amber-800 border border-amber-200 rounded px-2 py-0.5">
+                        {p}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {ecologie.ziekten.waarde.length > 0 && (
+                <div>
+                  <p className="text-caption text-amber-700 uppercase tracking-wide mb-1.5">Ziekten</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {ecologie.ziekten.waarde.map((z) => (
+                      <span key={z} className="text-caption bg-amber-100 text-amber-800 border border-amber-200 rounded px-2 py-0.5">
+                        {z}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <Bron bron={ecologie.plagen.bron} terugval={ecologie.plagen.terugval} />
+            </div>
+          ) : (
+            <LegeKaart tekst="Geen bekende plagen of ziekten in de catalogusdata." />
+          )}
+
+          {/* Waargenomen problemen bij deze plant (uit het journal) */}
+          <div>
+            <h3 className="text-heading-sm text-[var(--gp-text-mute)] uppercase tracking-wide mb-2">
+              Waargenomen bij deze plant
+            </h3>
+            {probleemObservaties.length > 0 ? (
+              <ul className="space-y-2">
+                {probleemObservaties.map((o) => {
+                  const zoneName = o.zoneId
+                    ? tuin.zones.find((z) => z.id === o.zoneId)?.naam
+                    : null;
+                  return (
+                    <li
+                      key={o.id}
+                      className="flex gap-3 p-3.5 rounded-xl border border-[var(--gp-border)] border-l-4 border-l-[var(--gp-rust-500)] bg-white"
+                    >
+                      <span className="shrink-0 mt-0.5 text-lg" aria-hidden>
+                        {OBSERVATIE_TYPE_ICOON[o.type]}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-body-sm text-moss-900 whitespace-pre-wrap">{o.tekst}</p>
+                        <p className="text-caption text-[var(--gp-text-mute)] mt-1">
+                          {o.datum} · {OBSERVATIE_TYPE_LABEL[o.type]}
+                          {zoneName && ` · ${zoneName}`}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-body-sm text-[var(--gp-text-mute)]">
+                Nog geen plaag- of ziekte-observaties voor deze plant.
+              </p>
+            )}
+          </div>
+
+          {/* CTA naar de foto-plagencheck */}
+          <button
+            onClick={() => navigate("/veld")}
+            className="flex items-center gap-2 text-body-sm text-moss-600 hover:underline"
+          >
+            <AlertTriangle size={14} aria-hidden />
+            Controleer een foto op plagen &amp; ziekten (Veld-modus) →
+          </button>
         </div>
       )}
 
