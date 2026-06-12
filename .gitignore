@@ -1,28 +1,33 @@
+# Dependencies & build
 node_modules/
 dist/
+.vite/
+*.tsbuildinfo
+
+# Geheimen — nooit committen
 .env
 .env.local
 .env*.local
+
+# Lokaal archief (oude artefacten, niet gesynchroniseerd)
+.archive/
+
+# Test & tooling output
+coverage/
+*.log
+
+# Lokale editor-/agent-instellingen
 *.local
-
-# Vite
-.vite/
-
-# TypeScript
-*.tsbuildinfo
-
-# Scratch-artefacten (geen bron)
-extracted/
-files.zip
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Editors
+.claude/settings.local.json
 .idea/
+.vscode/*
+!.vscode/extensions.json
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# OS
+.DS_Store
+Thumbs.db

@@ -35,28 +35,19 @@ These rules apply to all code and AI interactions in this project:
 
 ---
 
-## Project Bootstrap
+## Project Status & Layout
 
-When initializing the app for the first time:
+The app is **fully scaffolded** (Vite + React + TS + Tailwind). The live design system lives in
+`src/styles/` (`tokens.css`, `globals.css`, `theme.ts`) + `tailwind.config.ts` in the root; see
+`docs/STYLING_README.md`. Original handoff copies are archived locally in `.archive/` (git-ignored).
+Design mockups & specs: `GroenPlandesign/`.
 
-```bash
-npm create vite@latest . -- --template react-ts
-npm install tailwindcss postcss autoprefixer @tailwindcss/forms @tailwindcss/typography
-npm install lucide-react clsx recharts
-npx shadcn-ui@latest init
-```
-
-Copy the existing design system files into `src/styles/`:
-- `tokens.css` → `src/styles/tokens.css`
-- `globals.css` → `src/styles/globals.css`
-- `theme.ts` → `src/styles/theme.ts`
-- `tailwind.config.ts` → project root (replaces the generated one)
-
-## Commands (post-bootstrap)
+## Commands
 
 ```bash
-npm run dev          # Start Vite dev server
-npm run build        # Production build
+npm run dev          # Start Vite dev server (incl. /api/* middleware) — :5173
+npm run build        # Production build (tsc -b && vite build)
+npm run serve        # Express productie-server (na build) — :5174
 npm run preview      # Preview production build
 npm run test         # Run Vitest tests
 npm run test:watch   # Vitest watch mode
@@ -118,12 +109,19 @@ Veldmodus        ──→ Plantencatalogus (foto → wetenschappelijke naam)
 ```
 src/
   components/    # React UI components (see UI Component Inventory)
+  pages/         # Route-level components (lazy-loaded per route)
+  domain/        # Pure domain: tuin/, plant/, taken/, dagboek/, zaadbank/
   match/         # Pure scoring algorithm (soil, sun, pH, water, hardiness, bloomGap)
-  services/      # autofill.ts (Codex API adapter), plantnet.ts, weather.ts
-  pages/         # Route-level components
-  styles/        # tokens.css, globals.css, theme.ts
-  db/            # SQLite cache schema and migrations
+  services/      # Hexagonale adapters: autofill/, plantnet/, tuinontwerp/, plagen/, coach/, weather/, export/
+  server/        # Framework-agnostische /api-handlers + Express-server (npm run serve)
+  store/         # Zustand stores (persist) — tuin, taken, dagboek, bodem, zaadbank, zoek
+  data/          # Gecureerde lokale datasets (borderrecepten)
+  hooks/         # Gedeelde hooks (useOnlineStatus)
+  styles/        # tokens.css, globals.css, theme.ts (single source of truth)
 ```
+
+Caching: auto-fill resultaten worden client-side gecachet (in-memory + IndexedDB write-through);
+er is geen SQLite-laag.
 
 ### Styling System (Three-Layer)
 
