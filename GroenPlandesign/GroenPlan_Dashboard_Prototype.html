@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GroenPlan — Dashboard prototype</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<!-- Tailwind CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Lucide icons -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        moss: { 100:"#DCEAD8", 200:"#BCD4B3", 300:"#A8C09A", 500:"#3D6B4D", 600:"#326045", 700:"#2E5339", 800:"#264432", 900:"#1F3026" },
+        clay: { 400:"#C19A6B", 700:"#6E5234" },
+        sky:  { 200:"#A8C8D8", 500:"#4F8EA8" },
+        amber:{ 100:"#FAE9C5", 500:"#D89216", 700:"#8E5E0C" },
+        rust: { 100:"#F2DDD6", 500:"#9C3D2E", 700:"#62251C" },
+        bloom:{ 100:"#E5DCEF", 400:"#8F6BB8", 700:"#4A3169" },
+        surface: { DEFAULT:"#FFFFFF", alt:"#F4F1EA", bg:"#FAFAF4", border:"#E5E1D8", mute:"#808080" },
+      },
+      fontFamily: {
+        display: ['Fraunces', 'serif'],
+        sans:    ['Inter', 'sans-serif'],
+        mono:    ['JetBrains Mono', 'monospace'],
+      },
+      borderRadius: { sm:'6px', md:'10px', lg:'16px', xl:'24px' },
+      boxShadow: {
+        sm: '0 1px 2px rgba(31, 48, 38, 0.04)',
+        md: '0 4px 12px rgba(31, 48, 38, 0.06)',
+        lg: '0 12px 32px rgba(31, 48, 38, 0.08)',
+      }
+    }
+  }
+}
+</script>
+
+<style>
+  body { background: #FAFAF4; color: #1F3026; font-family: 'Inter', sans-serif; }
+  h1, h2, h3 { font-family: 'Fraunces', serif; color: #1F3026; }
+  .scientific { font-style: italic; }
+
+  /* Nav rail active state */
+  .nav-item-active { background: #3D6B4D !important; color: #fff !important; }
+  .nav-item-active::before {
+    content:""; position:absolute; left:-12px; top:8px; bottom:8px; width:3px;
+    background:#A8C09A; border-radius:9999px;
+  }
+
+  /* Subtle paper texture */
+  .paper-texture {
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(46, 83, 57, 0.025), transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(193, 154, 107, 0.025), transparent 50%);
+  }
+
+  /* Tuinkaart polygons */
+  .zone-polygon {
+    fill-opacity: 0.55;
+    stroke-width: 1.5;
+    cursor: pointer;
+    transition: fill-opacity 180ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .zone-polygon:hover { fill-opacity: 0.75; }
+
+  /* Donut svg */
+  .donut-track { stroke: #DCEAD8; }
+  .donut-fill  { stroke: #3D6B4D; transition: stroke-dashoffset 600ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+
+  /* Checkbox + completed task */
+  .task-row.completed .task-title { text-decoration: line-through; color: #808080; }
+  .checkbox { width:18px; height:18px; border:1.5px solid #BCB5A6; border-radius:5px; flex-shrink:0; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; transition: all 120ms; }
+  .checkbox.checked { background:#2E5339; border-color:#2E5339; }
+  .checkbox.checked::after { content:""; width:8px; height:5px; border-left:2px solid white; border-bottom:2px solid white; transform: rotate(-45deg) translateY(-1px); }
+
+  /* Focus rings */
+  button:focus-visible, .nav-item:focus-visible, .checkbox:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(46, 83, 57, 0.25);
+  }
+
+  /* Bloom gantt bars */
+  .gantt-bar { height: 6px; border-radius: 3px; }
+
+  /* Smooth interactions */
+  .clickable { cursor: pointer; transition: all 180ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+  .clickable:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(31, 48, 38, 0.08); }
+
+  [data-lucide] { width: 1em; height: 1em; }
+</style>
+</head>
+<body class="paper-texture">
+
+<div class="flex min-h-screen">
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       NAV RAIL
+  ═══════════════════════════════════════════════════════════════════ -->
+  <aside class="w-60 bg-moss-700 text-white flex flex-col p-4 sticky top-0 h-screen">
+    <!-- Logo -->
+    <div class="mb-8">
+      <div class="flex items-center gap-2 mb-1">
+        <div class="w-9 h-9 bg-moss-500 rounded-lg flex items-center justify-center">
+          <i data-lucide="leaf" class="text-moss-100" style="width:20px;height:20px;"></i>
+        </div>
+        <div>
+          <div class="font-display font-bold text-lg leading-none">GroenPlan</div>
+        </div>
+      </div>
+      <p class="text-xs text-moss-200 leading-snug mt-2 pl-1">Beheer je tuin als<br>een levend systeem</p>
+    </div>
+
+    <!-- Nav items -->
+    <nav class="flex-1 space-y-1 pl-3 -mr-3">
+      <a class="nav-item nav-item-active relative flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium clickable">
+        <i data-lucide="layout-dashboard"></i> Dashboard
+      </a>
+      <a class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-moss-200 hover:bg-moss-600 hover:text-white">
+        <i data-lucide="map"></i> Mijn Tuin
+      </a>
+      <a class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-moss-200 hover:bg-moss-600 hover:text-white">
+        <i data-lucide="grid-3x3"></i> Zones
+      </a>
+      <a class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-moss-200 hover:bg-moss-600 hover:text-white">
+        <i data-lucide="leaf"></i> Planten
+      </a>
+      <a class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-moss-200 hover:bg-moss-600 hover:text-white">
+        <i data-lucide="compass"></i> Ontdek
+      </a>
+      <a class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-moss-200 hover:bg-moss-600 hover:text-white">
+        <i data-lucide="check-square"></i> Taken
+      </a>
+      <a class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-moss-200 hover:bg-moss-600 hover:text-white">
+        <i data-lucide="calendar"></i> Kalender
+      </a>
+      <a class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-moss-200 hover:bg-moss-600 hover:text-white">
+        <i data-lucide="book-open"></i> Journal
+      </a>
+      <a class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-moss-200 hover:bg-moss-600 hover:text-white">
+        <i data-lucide="sparkles"></i> AI Coach
+      </a>
+      <a class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-moss-200 hover:bg-moss-600 hover:text-white">
+        <i data-lucide="test-tube"></i> Bodem & Metingen
+      </a>
+      <a class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-moss-200 hover:bg-moss-600 hover:text-white">
+        <i data-lucide="package"></i> Zaadbank
+      </a>
+      <a class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-moss-200 hover:bg-moss-600 hover:text-white">
+        <i data-lucide="settings"></i> Instellingen
+      </a>
+    </nav>
+
+    <!-- User profile -->
+    <div class="mt-4 flex items-center gap-3 p-3 bg-moss-800 rounded-lg clickable">
+      <div class="w-9 h-9 rounded-full bg-clay-400 flex items-center justify-center text-moss-900 font-semibold text-sm">Y</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-medium leading-tight">Yannick</div>
+        <div class="text-xs text-moss-200 leading-tight truncate">Tuin De Eik</div>
+      </div>
+      <i data-lucide="chevron-up" style="width:16px;height:16px;" class="text-moss-200"></i>
+    </div>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       MAIN CONTENT
+  ═══════════════════════════════════════════════════════════════════ -->
+  <main class="flex-1 p-8 max-w-[1400px]">
+
+    <!-- ═══════ TOP BAR ═══════ -->
+    <header class="flex items-start justify-between mb-8">
+      <div>
+        <h1 class="text-4xl font-display font-bold mb-1">Goedemorgen, Yannick <span class="font-sans">🌿</span></h1>
+        <p class="text-surface-mute">Dit is er vandaag te doen in je tuin.</p>
+      </div>
+      <div class="flex items-center gap-6 bg-white rounded-lg shadow-sm px-5 py-3">
+        <div class="flex items-center gap-3">
+          <i data-lucide="cloud-sun" style="width:36px;height:36px;" class="text-amber-500"></i>
+          <div>
+            <div class="text-2xl font-display font-bold leading-none">14°C</div>
+            <div class="text-xs text-surface-mute mt-1">Bewolkt · Neerslagkans 20%</div>
+          </div>
+        </div>
+        <div class="w-px h-12 bg-surface-border"></div>
+        <div>
+          <div class="text-sm font-medium">8° / 18°</div>
+          <div class="text-xs text-surface-mute">WZW 14 km/u</div>
+          <a class="text-xs text-moss-700 hover:underline mt-1 inline-block clickable">Volledige weersverwachting →</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══════ ROW 1: Vandaag / Zones / Quick Actions ═══════ -->
+    <div class="grid grid-cols-12 gap-6 mb-6">
+
+      <!-- Vandaag te doen -->
+      <section class="col-span-5 bg-white rounded-lg shadow-sm p-5">
+        <header class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold font-sans">Vandaag te doen</h3>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-moss-100 text-moss-700">6 taken</span>
+        </header>
+        <ul class="space-y-1">
+          <li class="task-row flex items-center gap-3 px-2 py-2.5 rounded-md hover:bg-surface-alt clickable" onclick="toggleTask(this)">
+            <span class="checkbox"></span>
+            <i data-lucide="scissors" style="width:18px;height:18px;" class="text-moss-700"></i>
+            <div class="flex-1 min-w-0">
+              <div class="task-title text-sm font-medium">Snoei lavendel</div>
+              <div class="text-xs text-surface-mute">Border achterhuis</div>
+            </div>
+            <span class="inline-flex px-2 py-0.5 rounded-full text-xs bg-moss-100 text-moss-700">Snoeien</span>
+          </li>
+          <li class="task-row flex items-center gap-3 px-2 py-2.5 rounded-md hover:bg-surface-alt clickable" onclick="toggleTask(this)">
+            <span class="checkbox"></span>
+            <i data-lucide="droplets" style="width:18px;height:18px;" class="text-sky-500"></i>
+            <div class="flex-1 min-w-0">
+              <div class="task-title text-sm font-medium">Geef water aan jonge planten</div>
+              <div class="text-xs text-surface-mute">Moestuin</div>
+            </div>
+            <span class="inline-flex px-2 py-0.5 rounded-full text-xs bg-sky-200 text-sky-500">Water</span>
+          </li>
+          <li class="task-row flex items-center gap-3 px-2 py-2.5 rounded-md hover:bg-surface-alt clickable" onclick="toggleTask(this)">
+            <span class="checkbox"></span>
+            <i data-lucide="search" style="width:18px;height:18px;" class="text-amber-500"></i>
+            <div class="flex-1 min-w-0">
+              <div class="task-title text-sm font-medium">Controleer aardbeien op meeldauw</div>
+              <div class="text-xs text-surface-mute">Moestuin</div>
+            </div>
+            <span class="inline-flex px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700">Controle</span>
+          </li>
+          <li class="task-row flex items-center gap-3 px-2 py-2.5 rounded-md hover:bg-surface-alt clickable" onclick="toggleTask(this)">
+            <span class="checkbox"></span>
+            <i data-lucide="sprout" style="width:18px;height:18px;" class="text-moss-500"></i>
+            <div class="flex-1 min-w-0">
+              <div class="task-title text-sm font-medium">Bemesting vaste planten</div>
+              <div class="text-xs text-surface-mute">Border voortuin</div>
+            </div>
+            <span class="inline-flex px-2 py-0.5 rounded-full text-xs bg-moss-100 text-moss-700">Voeding</span>
+          </li>
+        </ul>
+        <button class="mt-4 w-full text-center text-sm text-moss-700 font-medium hover:underline clickable">Alle taken bekijken →</button>
+      </section>
+
+      <!-- Zones met aandacht -->
+      <section class="col-span-4 bg-white rounded-lg shadow-sm p-5">
+        <header class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold font-sans">Zones met aandacht</h3>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">3 zones</span>
+        </header>
+        <ul class="space-y-3">
+          <li class="flex items-center gap-3 clickable rounded-md p-1 hover:bg-surface-alt">
+            <div class="w-14 h-14 rounded-md bg-gradient-to-br from-amber-100 to-clay-400 flex-shrink-0 flex items-center justify-center">
+              <i data-lucide="sprout" style="width:24px;height:24px;" class="text-moss-700"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-medium text-sm">Moestuin</div>
+              <div class="flex items-center gap-1 text-xs text-amber-700 mt-1">
+                <i data-lucide="alert-triangle" style="width:12px;height:12px;"></i> Droogte-alert
+              </div>
+            </div>
+            <i data-lucide="droplets" style="width:18px;height:18px;" class="text-amber-500"></i>
+          </li>
+          <li class="flex items-center gap-3 clickable rounded-md p-1 hover:bg-surface-alt">
+            <div class="w-14 h-14 rounded-md bg-gradient-to-br from-moss-100 to-moss-300 flex-shrink-0 flex items-center justify-center">
+              <i data-lucide="leaf" style="width:24px;height:24px;" class="text-moss-700"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-medium text-sm">Achterborder</div>
+              <div class="flex items-center gap-1 text-xs text-amber-700 mt-1">
+                <i data-lucide="alert-circle" style="width:12px;height:12px;"></i> Onkruiddruk hoog
+              </div>
+            </div>
+            <i data-lucide="leaf" style="width:18px;height:18px;" class="text-amber-500"></i>
+          </li>
+          <li class="flex items-center gap-3 clickable rounded-md p-1 hover:bg-surface-alt">
+            <div class="w-14 h-14 rounded-md bg-gradient-to-br from-sky-200 to-moss-300 flex-shrink-0 flex items-center justify-center">
+              <i data-lucide="home" style="width:24px;height:24px;" class="text-moss-700"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-medium text-sm">Serre</div>
+              <div class="flex items-center gap-1 text-xs text-rust-700 mt-1">
+                <i data-lucide="snowflake" style="width:12px;height:12px;"></i> Vorstgevoelig vannacht
+              </div>
+            </div>
+            <i data-lucide="snowflake" style="width:18px;height:18px;" class="text-rust-500"></i>
+          </li>
+        </ul>
+        <button class="mt-4 w-full text-center text-sm text-moss-700 font-medium hover:underline clickable">Alle zones bekijken →</button>
+      </section>
+
+      <!-- Quick Actions -->
+      <section class="col-span-3 bg-white rounded-lg shadow-sm p-5">
+        <h3 class="text-lg font-semibold font-sans mb-4">Snelle acties</h3>
+        <div class="space-y-2">
+          <button class="w-full flex items-center justify-center gap-2 bg-moss-700 hover:bg-moss-600 text-white px-4 py-2.5 rounded-md text-sm font-medium clickable">
+            <i data-lucide="plus" style="width:16px;height:16px;"></i> Plant toevoegen
+          </button>
+          <button class="w-full flex items-center justify-center gap-2 bg-white border border-surface-border hover:bg-surface-alt text-moss-700 px-4 py-2.5 rounded-md text-sm font-medium clickable">
+            <i data-lucide="plus" style="width:16px;height:16px;"></i> Taak toevoegen
+          </button>
+          <button class="w-full flex items-center justify-center gap-2 bg-white border border-surface-border hover:bg-surface-alt text-moss-700 px-4 py-2.5 rounded-md text-sm font-medium clickable">
+            <i data-lucide="camera" style="width:16px;height:16px;"></i> Foto toevoegen
+          </button>
+          <button class="w-full flex items-center justify-center gap-2 bg-white border border-surface-border hover:bg-surface-alt text-moss-700 px-4 py-2.5 rounded-md text-sm font-medium clickable">
+            <i data-lucide="bug" style="width:16px;height:16px;"></i> Plagen-detectie
+          </button>
+          <button class="w-full flex items-center justify-center gap-2 bg-white border border-surface-border hover:bg-surface-alt text-moss-700 px-4 py-2.5 rounded-md text-sm font-medium clickable">
+            <i data-lucide="sparkles" style="width:16px;height:16px;"></i> Vraag aan AI
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <!-- ═══════ ROW 2: Bloeikalender / Tuin gezondheid / Laatste observaties ═══════ -->
+    <div class="grid grid-cols-12 gap-6 mb-6">
+
+      <!-- Bloeikalender -->
+      <section class="col-span-5 bg-white rounded-lg shadow-sm p-5">
+        <header class="flex items-baseline justify-between mb-4">
+          <h3 class="text-lg font-semibold font-sans">Bloeikalender <span class="text-sm text-surface-mute font-normal">(de komende 6 weken)</span></h3>
+        </header>
+        <!-- Month axis -->
+        <div class="grid grid-cols-6 gap-1 mb-3 text-xs text-surface-mute font-medium">
+          <div></div>
+          <div class="text-center">20 mei</div>
+          <div class="text-center">27 mei</div>
+          <div class="text-center">3 jun</div>
+          <div class="text-center">10 jun</div>
+          <div class="text-center">17 jun</div>
+        </div>
+        <!-- Rows -->
+        <div class="space-y-2">
+          <div class="grid grid-cols-6 gap-1 items-center">
+            <div class="text-xs text-surface-mute">Voortuin</div>
+            <div></div>
+            <div class="gantt-bar bg-bloom-400" style="width:80%"></div>
+            <div class="gantt-bar bg-bloom-400" style="width:100%"></div>
+            <div class="gantt-bar bg-amber-500" style="width:60%"></div>
+            <div></div>
+          </div>
+          <div class="grid grid-cols-6 gap-1 items-center">
+            <div class="text-xs text-surface-mute">Achterborder</div>
+            <div class="gantt-bar bg-moss-300" style="width:100%"></div>
+            <div class="gantt-bar bg-bloom-400" style="width:100%"></div>
+            <div class="gantt-bar bg-amber-500" style="width:100%"></div>
+            <div class="gantt-bar bg-amber-500" style="width:100%"></div>
+            <div class="gantt-bar bg-rust-500" style="width:50%; opacity:0.6"></div>
+          </div>
+          <div class="grid grid-cols-6 gap-1 items-center">
+            <div class="text-xs text-surface-mute">Moestuin</div>
+            <div></div>
+            <div></div>
+            <div class="gantt-bar bg-moss-300" style="width:100%"></div>
+            <div class="gantt-bar bg-amber-500" style="width:100%"></div>
+            <div class="gantt-bar bg-amber-500" style="width:100%"></div>
+          </div>
+          <div class="grid grid-cols-6 gap-1 items-center">
+            <div class="text-xs text-surface-mute">Kruidenhoek</div>
+            <div></div>
+            <div class="gantt-bar bg-bloom-400" style="width:50%"></div>
+            <div class="gantt-bar bg-moss-300" style="width:100%"></div>
+            <div class="gantt-bar bg-moss-300" style="width:100%"></div>
+            <div class="gantt-bar bg-moss-300" style="width:100%"></div>
+          </div>
+        </div>
+        <button class="mt-5 w-full text-center text-sm text-moss-700 font-medium hover:underline clickable">Bekijk volledige bloeikalender →</button>
+      </section>
+
+      <!-- Tuin gezondheid -->
+      <section class="col-span-3 bg-white rounded-lg shadow-sm p-5 flex flex-col">
+        <h3 class="text-lg font-semibold font-sans mb-2">Tuin gezondheid</h3>
+        <div class="flex-1 flex items-center justify-center my-2">
+          <svg viewBox="0 0 100 100" class="w-32 h-32 -rotate-90">
+            <circle cx="50" cy="50" r="42" fill="none" class="donut-track" stroke-width="10" />
+            <circle cx="50" cy="50" r="42" fill="none" class="donut-fill" stroke-width="10"
+                    stroke-dasharray="263.9" stroke-dashoffset="58.06" stroke-linecap="round" />
+          </svg>
+          <div class="absolute text-center">
+            <div class="font-display font-bold text-3xl text-moss-700">78</div>
+            <div class="text-xs text-surface-mute">/ 100</div>
+          </div>
+        </div>
+        <div class="text-center">
+          <div class="text-sm font-medium text-moss-700">Biodiversiteit goed</div>
+          <div class="text-xs text-surface-mute">Bodem gezond</div>
+        </div>
+        <button class="mt-4 w-full text-center text-sm text-moss-700 font-medium hover:underline clickable">Details bekijken →</button>
+      </section>
+
+      <!-- Laatste observaties -->
+      <section class="col-span-4 bg-white rounded-lg shadow-sm p-5">
+        <h3 class="text-lg font-semibold font-sans mb-4">Laatste observaties</h3>
+        <ul class="space-y-3">
+          <li class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-md bg-rust-100 flex-shrink-0 flex items-center justify-center">
+              <i data-lucide="bug" style="width:18px;height:18px;" class="text-rust-500"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium">Roest op rozenblad</div>
+              <div class="text-xs text-surface-mute mt-0.5">Vandaag · Roos 'Gertrude Jekyll'</div>
+            </div>
+          </li>
+          <li class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-md bg-rust-100 flex-shrink-0 flex items-center justify-center">
+              <i data-lucide="apple" style="width:18px;height:18px;" class="text-rust-500"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium">Aardbeien geoogst</div>
+              <div class="text-xs text-surface-mute mt-0.5">Gisteren · 1,2 kg</div>
+            </div>
+          </li>
+          <li class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-md bg-clay-400 bg-opacity-30 flex-shrink-0 flex items-center justify-center">
+              <i data-lucide="test-tube" style="width:18px;height:18px;" class="text-clay-700"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium">pH meting</div>
+              <div class="text-xs text-surface-mute mt-0.5">2 dagen geleden · Moestuin · 6.4</div>
+            </div>
+          </li>
+        </ul>
+        <button class="mt-4 w-full text-center text-sm text-moss-700 font-medium hover:underline clickable">Alle observaties →</button>
+      </section>
+    </div>
+
+    <!-- ═══════ ROW 3: Mijn Tuin preview ═══════ -->
+    <section class="bg-white rounded-lg shadow-sm p-5 mb-6">
+      <header class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-lg font-semibold font-sans">Mijn Tuin</h3>
+          <p class="text-sm text-surface-mute">Overzicht van je tuin en zones</p>
+        </div>
+        <button class="flex items-center gap-2 bg-moss-700 hover:bg-moss-600 text-white px-3 py-2 rounded-md text-sm font-medium clickable">
+          <i data-lucide="plus" style="width:14px;height:14px;"></i> Zone toevoegen
+        </button>
+      </header>
+      <div class="grid grid-cols-12 gap-6">
+        <!-- Tuinkaart SVG -->
+        <div class="col-span-8 relative bg-gradient-to-br from-moss-100 to-moss-200 rounded-lg overflow-hidden" style="aspect-ratio: 16/10;">
+          <svg viewBox="0 0 800 500" class="w-full h-full">
+            <!-- Achterborder -->
+            <polygon class="zone-polygon" points="80,80 380,80 380,250 80,250"
+                     fill="#3D6B4D" stroke="#1F3026" />
+            <text x="230" y="160" font-family="Inter" font-size="18" font-weight="600" fill="white" text-anchor="middle">Achterborder</text>
+            <text x="230" y="180" font-family="Inter" font-size="13" fill="white" text-anchor="middle" opacity="0.85">145 m²</text>
+
+            <!-- Moestuin -->
+            <polygon class="zone-polygon" points="420,80 600,80 600,200 420,200"
+                     fill="#D89216" stroke="#1F3026" />
+            <text x="510" y="135" font-family="Inter" font-size="16" font-weight="600" fill="white" text-anchor="middle">Moestuin</text>
+            <text x="510" y="155" font-family="Inter" font-size="12" fill="white" text-anchor="middle" opacity="0.85">36 m²</text>
+
+            <!-- Serre -->
+            <polygon class="zone-polygon" points="640,80 740,80 740,180 640,180"
+                     fill="#A8C8D8" stroke="#1F3026" />
+            <text x="690" y="130" font-family="Inter" font-size="14" font-weight="600" fill="#1F3026" text-anchor="middle">Serre</text>
+            <text x="690" y="148" font-family="Inter" font-size="11" fill="#1F3026" text-anchor="middle" opacity="0.7">12 m²</text>
+
+            <!-- Voortuin -->
+            <polygon class="zone-polygon" points="80,290 380,290 380,440 80,440"
+                     fill="#8F6BB8" stroke="#1F3026" />
+            <text x="230" y="365" font-family="Inter" font-size="16" font-weight="600" fill="white" text-anchor="middle">Voortuin</text>
+            <text x="230" y="385" font-family="Inter" font-size="12" fill="white" text-anchor="middle" opacity="0.85">62 m²</text>
+
+            <!-- Kruidenhoek -->
+            <polygon class="zone-polygon" points="420,220 540,220 540,330 420,330"
+                     fill="#7FA078" stroke="#1F3026" />
+            <text x="480" y="275" font-family="Inter" font-size="14" font-weight="600" fill="white" text-anchor="middle">Kruidenhoek</text>
+            <text x="480" y="293" font-family="Inter" font-size="11" fill="white" text-anchor="middle" opacity="0.85">9 m²</text>
+
+            <!-- Gazon -->
+            <polygon class="zone-polygon" points="560,220 740,220 740,440 420,440 420,350 560,350"
+                     fill="#A8C09A" stroke="#1F3026" />
+            <text x="600" y="395" font-family="Inter" font-size="16" font-weight="600" fill="#1F3026" text-anchor="middle">Gazon</text>
+            <text x="600" y="413" font-family="Inter" font-size="12" fill="#1F3026" text-anchor="middle" opacity="0.75">120 m²</text>
+          </svg>
+
+          <!-- Map controls -->
+          <div class="absolute right-3 top-3 flex flex-col gap-1 bg-white rounded-md shadow-sm">
+            <button class="w-8 h-8 flex items-center justify-center hover:bg-surface-alt clickable rounded-t-md">
+              <i data-lucide="plus" style="width:14px;height:14px;" class="text-moss-900"></i>
+            </button>
+            <button class="w-8 h-8 flex items-center justify-center hover:bg-surface-alt clickable">
+              <i data-lucide="minus" style="width:14px;height:14px;" class="text-moss-900"></i>
+            </button>
+            <button class="w-8 h-8 flex items-center justify-center hover:bg-surface-alt clickable rounded-b-md">
+              <i data-lucide="layers" style="width:14px;height:14px;" class="text-moss-900"></i>
+            </button>
+          </div>
+
+          <!-- Overlay tabs -->
+          <div class="absolute left-3 top-3 flex bg-white rounded-md shadow-sm overflow-hidden">
+            <button class="px-3 py-1.5 text-xs font-medium bg-moss-700 text-white">Kaart</button>
+            <button class="px-3 py-1.5 text-xs font-medium hover:bg-surface-alt text-moss-900 clickable">Zon</button>
+            <button class="px-3 py-1.5 text-xs font-medium hover:bg-surface-alt text-moss-900 clickable">Irrigatie</button>
+            <button class="px-3 py-1.5 text-xs font-medium hover:bg-surface-alt text-moss-900 clickable">Bodem</button>
+          </div>
+        </div>
+
+        <!-- Stats + Recent active -->
+        <div class="col-span-4 flex flex-col">
+          <!-- Stats strip -->
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="text-center p-3 rounded-md bg-surface-alt">
+              <div class="font-display font-bold text-2xl text-moss-700">6</div>
+              <div class="text-xs text-surface-mute mt-0.5">Zones</div>
+            </div>
+            <div class="text-center p-3 rounded-md bg-surface-alt">
+              <div class="font-display font-bold text-2xl text-moss-700">128</div>
+              <div class="text-xs text-surface-mute mt-0.5">Planten</div>
+            </div>
+            <div class="text-center p-3 rounded-md bg-surface-alt">
+              <div class="font-display font-bold text-2xl text-moss-700">78<span class="text-sm text-surface-mute">/100</span></div>
+              <div class="text-xs text-surface-mute mt-0.5">Biodiversiteit</div>
+            </div>
+            <div class="text-center p-3 rounded-md bg-surface-alt">
+              <div class="font-display font-bold text-lg text-amber-700 mt-1.5">Medium</div>
+              <div class="text-xs text-surface-mute mt-0.5">Onderhoudsdruk</div>
+            </div>
+          </div>
+          <!-- Recent actief -->
+          <div>
+            <h4 class="text-sm font-semibold text-moss-900 mb-3">Recent actief in je tuin</h4>
+            <ul class="space-y-2.5">
+              <li class="flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-full bg-moss-100 flex-shrink-0 flex items-center justify-center mt-0.5">
+                  <i data-lucide="leaf" style="width:12px;height:12px;" class="text-moss-700"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-xs"><span class="scientific">Lavandula angustifolia</span> toegevoegd aan Achterborder</div>
+                  <div class="text-xs text-surface-mute">Vandaag</div>
+                </div>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-full bg-moss-100 flex-shrink-0 flex items-center justify-center mt-0.5">
+                  <i data-lucide="check" style="width:12px;height:12px;" class="text-moss-700"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-xs">Taak <span class="font-medium">'Snoei rozen'</span> voltooid</div>
+                  <div class="text-xs text-surface-mute">Gisteren</div>
+                </div>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-full bg-moss-100 flex-shrink-0 flex items-center justify-center mt-0.5">
+                  <i data-lucide="camera" style="width:12px;height:12px;" class="text-moss-700"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-xs">Observatie toegevoegd aan Tomaat 'San Marzano'</div>
+                  <div class="text-xs text-surface-mute">2 dagen geleden</div>
+                </div>
+              </li>
+            </ul>
+            <button class="mt-4 text-sm text-moss-700 font-medium hover:underline clickable">Bekijk alle activiteit →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer note -->
+    <footer class="text-center text-xs text-surface-mute mt-8 mb-4">
+      GroenPlan Dashboard prototype · v0.1 — afgeleid uit Design Brief v0.3
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  // Initialize Lucide icons
+  lucide.createIcons();
+
+  // Toggle task completion on click
+  function toggleTask(row) {
+    const cb = row.querySelector('.checkbox');
+    cb.classList.toggle('checked');
+    row.classList.toggle('completed');
+  }
+
+  // Make all nav items clickable to highlight
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', e => {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('nav-item-active'));
+      item.classList.add('nav-item-active');
+    });
+  });
+</script>
+
+</body>
+</html>

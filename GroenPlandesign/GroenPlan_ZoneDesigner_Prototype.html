@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GroenPlan — Zone Designer prototype</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        moss: { 100:"#DCEAD8", 200:"#BCD4B3", 300:"#A8C09A", 400:"#7FA078", 500:"#3D6B4D", 600:"#326045", 700:"#2E5339", 800:"#264432", 900:"#1F3026" },
+        clay: { 400:"#C19A6B", 700:"#6E5234" },
+        sky:  { 200:"#A8C8D8", 500:"#4F8EA8" },
+        amber:{ 100:"#FAE9C5", 500:"#D89216", 700:"#8E5E0C" },
+        rust: { 100:"#F2DDD6", 500:"#9C3D2E", 700:"#62251C" },
+        bloom:{ 100:"#E5DCEF", 400:"#8F6BB8", 700:"#4A3169" },
+        surface: { DEFAULT:"#FFFFFF", alt:"#F4F1EA", bg:"#FAFAF4", border:"#E5E1D8", mute:"#808080" },
+      },
+      fontFamily: {
+        display: ['Fraunces', 'serif'],
+        sans:    ['Inter', 'sans-serif'],
+        mono:    ['JetBrains Mono', 'monospace'],
+      },
+      borderRadius: { sm:'6px', md:'10px', lg:'16px', xl:'24px' },
+      boxShadow: {
+        sm: '0 1px 2px rgba(31, 48, 38, 0.04)',
+        md: '0 4px 12px rgba(31, 48, 38, 0.06)',
+        lg: '0 12px 32px rgba(31, 48, 38, 0.08)',
+      }
+    }
+  }
+}
+</script>
+
+<style>
+  body { background: #FAFAF4; color: #1F3026; font-family: 'Inter', sans-serif; }
+  h1, h2, h3 { font-family: 'Fraunces', serif; color: #1F3026; }
+  .scientific { font-style: italic; }
+  [data-lucide] { width: 1em; height: 1em; }
+
+  /* Nav rail */
+  .nav-item-active { background: #3D6B4D !important; color: #fff !important; }
+  .nav-item-active::before {
+    content:""; position:absolute; left:-12px; top:8px; bottom:8px; width:3px;
+    background:#A8C09A; border-radius:9999px;
+  }
+
+  /* Tab bar */
+  .tab { position: relative; padding: 12px 18px; font-size: 14px; font-weight: 500; color: #808080; cursor: pointer; transition: color 180ms; display: flex; align-items: center; gap: 8px; }
+  .tab:hover { color: #2E5339; }
+  .tab.active { color: #2E5339; }
+  .tab.active::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px; background: #2E5339; border-radius: 2px; }
+
+  /* Tool buttons */
+  .tool-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; font-size: 13px; font-weight: 500; color: #1F3026; background: white; border-radius: 8px; cursor: pointer; transition: all 120ms; }
+  .tool-btn:hover { background: #F4F1EA; }
+  .tool-btn.active { background: #2E5339; color: white; }
+
+  /* Canvas */
+  .canvas-wrap {
+    background: linear-gradient(180deg, #E8EFE0 0%, #DCEAD8 100%);
+    background-image:
+      radial-gradient(circle at 25% 25%, rgba(46, 83, 57, 0.04), transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(193, 154, 107, 0.04), transparent 50%),
+      linear-gradient(180deg, #E8EFE0 0%, #DCEAD8 100%);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+  }
+  .canvas-wrap.grid-on::before {
+    content: "";
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(31, 48, 38, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(31, 48, 38, 0.04) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none;
+  }
+  .canvas-wrap.iso #svg-canvas {
+    transform: rotateX(55deg) rotateZ(-15deg) scale(0.85);
+    transform-origin: center 60%;
+    transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  #svg-canvas { width: 100%; height: 100%; display: block; transition: transform 320ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+
+  /* Plant circles */
+  .plant-circle { cursor: grab; transition: stroke-width 120ms, filter 120ms; }
+  .plant-circle:hover { filter: brightness(1.05); stroke-width: 3 !important; }
+  .plant-circle.dragging { cursor: grabbing; filter: brightness(1.1); }
+  .plant-circle.selected { stroke: #1F3026 !important; stroke-width: 3 !important; }
+  .plant-circle.dimmed { opacity: 0.25; }
+  .plant-circle.dormant { opacity: 0.35; filter: grayscale(0.6); }
+  .plant-circle.companion-good { stroke: #3D6B4D !important; stroke-width: 3.5 !important; }
+  .plant-circle.companion-bad  { stroke: #9C3D2E !important; stroke-width: 3.5 !important; }
+  .plant-circle.companion-neutral { opacity: 0.5; }
+  .plant-label { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; pointer-events: none; user-select: none; }
+  .status-ring { fill: none; stroke-width: 2; pointer-events: none; }
+  .height-bar { stroke-width: 2; stroke-linecap: round; opacity: 0.85; }
+  .overlap-marker { fill: #D89216; opacity: 0.6; pointer-events: none; }
+  .overlap-marker.severe { fill: #9C3D2E; opacity: 0.7; }
+
+  /* Range input styling */
+  input[type="range"] { -webkit-appearance: none; height: 4px; background: #DCEAD8; border-radius: 2px; outline: none; }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 20px; height: 20px; background: #2E5339; border-radius: 50%; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  }
+  input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; background: #2E5339; border-radius: 50%; cursor: pointer; border: none; }
+
+  /* Clickable hover */
+  .clickable { cursor: pointer; transition: all 180ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+  .clickable:hover { background: #F4F1EA; }
+
+  /* Plant list row */
+  .plant-row { cursor: pointer; transition: background 120ms; }
+  .plant-row:hover { background: #F4F1EA; }
+  .plant-row.selected { background: #DCEAD8; }
+
+  /* Focus rings */
+  button:focus-visible, .tab:focus-visible, input:focus-visible {
+    outline: none; box-shadow: 0 0 0 3px rgba(46, 83, 57, 0.25);
+  }
+
+  /* Mini stat bar for analyse */
+  .bar-track { background: #F4F1EA; border-radius: 3px; height: 8px; overflow: hidden; }
+  .bar-fill  { height: 100%; border-radius: 3px; transition: width 320ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+
+  /* Bloei gantt mini */
+  .gantt-cell { height: 8px; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="flex min-h-screen">
+
+  <!-- ═══════ NAV RAIL ═══════ -->
+  <aside class="w-60 bg-moss-700 text-white flex flex-col p-4 sticky top-0 h-screen">
+    <div class="mb-8">
+      <div class="flex items-center gap-2 mb-1">
+        <div class="w-9 h-9 bg-moss-500 rounded-lg flex items-center justify-center">
+          <i data-lucide="leaf" class="text-moss-100" style="width:20px;height:20px;"></i>
+        </div>
+        <div class="font-display font-bold text-lg leading-none">GroenPlan</div>
+      </div>
+      <p class="text-xs text-moss-200 leading-snug mt-2 pl-1">Beheer je tuin als<br>een levend systeem</p>
+    </div>
+
+    <nav class="flex-1 space-y-1 pl-3 -mr-3">
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-moss-200 hover:bg-moss-600 hover:text-white clickable">
+        <i data-lucide="layout-dashboard"></i> Dashboard
+      </a>
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-moss-200 hover:bg-moss-600 hover:text-white clickable">
+        <i data-lucide="map"></i> Mijn Tuin
+      </a>
+      <a class="nav-item-active relative flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium clickable">
+        <i data-lucide="grid-3x3"></i> Zones
+      </a>
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-moss-200 hover:bg-moss-600 hover:text-white clickable">
+        <i data-lucide="leaf"></i> Planten
+      </a>
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-moss-200 hover:bg-moss-600 hover:text-white clickable">
+        <i data-lucide="compass"></i> Ontdek
+      </a>
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-moss-200 hover:bg-moss-600 hover:text-white clickable">
+        <i data-lucide="check-square"></i> Taken
+      </a>
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-moss-200 hover:bg-moss-600 hover:text-white clickable">
+        <i data-lucide="calendar"></i> Kalender
+      </a>
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-moss-200 hover:bg-moss-600 hover:text-white clickable">
+        <i data-lucide="book-open"></i> Journal
+      </a>
+      <a class="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-moss-200 hover:bg-moss-600 hover:text-white clickable">
+        <i data-lucide="sparkles"></i> AI Coach
+      </a>
+    </nav>
+
+    <div class="mt-4 flex items-center gap-3 p-3 bg-moss-800 rounded-lg clickable">
+      <div class="w-9 h-9 rounded-full bg-clay-400 flex items-center justify-center text-moss-900 font-semibold text-sm">Y</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-medium leading-tight">Yannick</div>
+        <div class="text-xs text-moss-200 leading-tight truncate">Tuin De Eik</div>
+      </div>
+      <i data-lucide="chevron-up" style="width:16px;height:16px;" class="text-moss-200"></i>
+    </div>
+  </aside>
+
+  <!-- ═══════ MAIN ═══════ -->
+  <main class="flex-1 flex flex-col min-w-0">
+
+    <!-- Page header -->
+    <header class="px-8 py-5 border-b border-surface-border bg-white">
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <button class="w-8 h-8 flex items-center justify-center hover:bg-surface-alt rounded-md clickable">
+            <i data-lucide="arrow-left" style="width:18px;height:18px;"></i>
+          </button>
+          <div>
+            <h1 class="text-2xl font-display font-bold leading-tight">Achterborder</h1>
+            <p class="text-sm text-surface-mute">145 m² · Border · Zuid-georiënteerd · Vol zon</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="grid-toggle" class="tool-btn">
+            <i data-lucide="grid-3x3" style="width:14px;height:14px;"></i> Grid
+          </button>
+          <button id="labels-toggle" class="tool-btn active">
+            <i data-lucide="type" style="width:14px;height:14px;"></i> Labels
+          </button>
+          <button class="flex items-center gap-2 bg-moss-700 hover:bg-moss-600 text-white px-3.5 py-2 rounded-md text-sm font-medium clickable">
+            <i data-lucide="edit-3" style="width:14px;height:14px;"></i> Bewerken
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Toolbar -->
+    <div id="toolbar" class="px-8 py-3 bg-white border-b border-surface-border flex items-center gap-2">
+      <button data-tool="select" class="tool-btn active">
+        <i data-lucide="mouse-pointer-2" style="width:14px;height:14px;"></i> Selecteer
+      </button>
+      <button data-tool="add" class="tool-btn">
+        <i data-lucide="plus" style="width:14px;height:14px;"></i> Plant toevoegen
+      </button>
+      <button data-tool="move" class="tool-btn">
+        <i data-lucide="move" style="width:14px;height:14px;"></i> Verplaatsen
+      </button>
+      <button data-tool="measure" class="tool-btn">
+        <i data-lucide="ruler" style="width:14px;height:14px;"></i> Meten
+      </button>
+      <button class="tool-btn">
+        <i data-lucide="more-horizontal" style="width:14px;height:14px;"></i>
+      </button>
+      <div class="ml-auto text-xs text-surface-mute">Achterborder · 23 planten</div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="px-8 bg-white border-b border-surface-border flex items-center">
+      <div id="tabs" class="flex">
+        <div data-tab="2d" class="tab active">
+          <i data-lucide="square" style="width:14px;height:14px;"></i> 2D
+        </div>
+        <div data-tab="3d" class="tab">
+          <i data-lucide="box" style="width:14px;height:14px;"></i> 3D
+        </div>
+        <div data-tab="seasons" class="tab">
+          <i data-lucide="calendar" style="width:14px;height:14px;"></i> Seizoenen
+        </div>
+        <div data-tab="companions" class="tab">
+          <i data-lucide="heart" style="width:14px;height:14px;"></i> Companions
+        </div>
+        <div data-tab="analyse" class="tab">
+          <i data-lucide="bar-chart-3" style="width:14px;height:14px;"></i> Analyse
+        </div>
+      </div>
+    </div>
+
+    <!-- Main canvas + right panel -->
+    <div class="flex-1 flex min-h-0">
+
+      <!-- Canvas area -->
+      <section class="flex-1 p-6 flex flex-col min-w-0">
+
+        <!-- Seasons slider (visible only in seasons tab) -->
+        <div id="seasons-bar" class="hidden mb-3 bg-white rounded-lg p-4 shadow-sm">
+          <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2">
+              <i data-lucide="calendar" style="width:16px;height:16px;" class="text-moss-700"></i>
+              <span class="text-sm font-medium">Maand</span>
+            </div>
+            <input id="month-slider" type="range" min="1" max="12" value="6" class="flex-1" />
+            <div class="text-sm font-mono w-32 text-right" id="month-label">Juni</div>
+          </div>
+          <div class="grid grid-cols-12 gap-1 mt-3 text-xs text-surface-mute">
+            <div class="text-center">jan</div><div class="text-center">feb</div><div class="text-center">mrt</div>
+            <div class="text-center">apr</div><div class="text-center">mei</div><div class="text-center">jun</div>
+            <div class="text-center">jul</div><div class="text-center">aug</div><div class="text-center">sep</div>
+            <div class="text-center">okt</div><div class="text-center">nov</div><div class="text-center">dec</div>
+          </div>
+        </div>
+
+        <!-- Analyse panel (visible only in analyse tab) -->
+        <div id="analyse-panel" class="hidden flex-1 grid grid-cols-2 gap-4 overflow-auto">
+          <!-- Cards filled by JS -->
+        </div>
+
+        <!-- The canvas (visible in 2d/3d/seasons/companions) -->
+        <div id="canvas-area" class="canvas-wrap flex-1 min-h-[460px] shadow-md">
+          <svg id="svg-canvas" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet"></svg>
+
+          <!-- Scale ruler -->
+          <div class="absolute left-4 top-4 bg-white rounded-md shadow-sm px-2 py-1 text-xs font-mono flex items-center gap-2">
+            <span>3 m</span>
+            <span class="block w-12 h-0.5 bg-moss-900"></span>
+          </div>
+
+          <!-- Zoom controls -->
+          <div class="absolute right-4 top-4 flex flex-col bg-white rounded-md shadow-sm overflow-hidden">
+            <button class="w-8 h-8 flex items-center justify-center hover:bg-surface-alt clickable">
+              <i data-lucide="plus" style="width:14px;height:14px;"></i>
+            </button>
+            <button class="w-8 h-8 flex items-center justify-center hover:bg-surface-alt clickable border-t border-surface-border">
+              <i data-lucide="minus" style="width:14px;height:14px;"></i>
+            </button>
+            <button class="w-8 h-8 flex items-center justify-center hover:bg-surface-alt clickable border-t border-surface-border">
+              <i data-lucide="maximize" style="width:14px;height:14px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Bottom legend + tip -->
+        <div class="mt-4 flex items-center justify-between gap-4">
+          <div id="legend" class="flex items-center gap-3 text-xs">
+            <span class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-moss-500"></span> Geen overlap
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-amber-500"></span> Lichte overlap
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="w-3 h-3 rounded-full bg-rust-500"></span> Te dicht
+            </span>
+            <span class="ml-3 text-surface-mute" id="legend-stats"></span>
+          </div>
+          <div id="tip" class="text-xs text-surface-mute italic flex items-center gap-2">
+            <i data-lucide="info" style="width:14px;height:14px;"></i>
+            <span id="tip-text">Sleep planten om ze te verplaatsen. Cirkel = eindbreedte.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right panel: plant list (default) or companion details -->
+      <aside class="w-80 border-l border-surface-border bg-white flex flex-col min-h-0">
+        <header class="px-5 py-4 border-b border-surface-border flex items-center justify-between">
+          <h3 class="font-semibold text-base" id="panel-title">Planten in zone</h3>
+          <span id="panel-count" class="text-xs bg-moss-100 text-moss-700 px-2 py-0.5 rounded-full font-medium">23</span>
+        </header>
+
+        <!-- Companion side detail (only visible in companions tab when plant selected) -->
+        <div id="companion-detail" class="hidden p-4 border-b border-surface-border bg-moss-100/40">
+          <!-- Filled by JS -->
+        </div>
+
+        <div class="flex-1 overflow-auto p-2" id="plant-list">
+          <!-- Filled by JS -->
+        </div>
+      </aside>
+
+    </div>
+  </main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════════════
+// Coordinates in meters, scaled to 800×500 SVG viewbox (1m = 50px).
+// Zone Achterborder is roughly 16 × 10 m = 160 m² (mockup: 145 m², close enough).
+
+const ZONE = { width_m: 16, height_m: 10 };
+const SCALE = 50; // 1m = 50px
+
+const SPECIES = {
+  lavendel:  { vn: "Lavendel",       wn: "Lavandula angustifolia",     family: "Lamiaceae",     color: "#8F6BB8", height_cm: 50, diameter_m: 0.6, bloom: [6,7,8],         pollinator: ["bees","butterflies"], care: 1 },
+  salvia:    { vn: "Salie",          wn: "Salvia nemorosa 'Caradonna'", family: "Lamiaceae",     color: "#5A3E83", height_cm: 45, diameter_m: 0.45, bloom: [5,6,7,8,9],     pollinator: ["bees"],               care: 1 },
+  echinacea: { vn: "Zonnehoed",      wn: "Echinacea purpurea",         family: "Asteraceae",    color: "#D27FAA", height_cm: 80, diameter_m: 0.55, bloom: [7,8,9],         pollinator: ["bees","butterflies"], care: 2 },
+  nepeta:    { vn: "Kattenkruid",    wn: "Nepeta faassenii",           family: "Lamiaceae",     color: "#7B9AC8", height_cm: 35, diameter_m: 0.6, bloom: [5,6,7,8],       pollinator: ["bees"],               care: 1 },
+  achillea:  { vn: "Duizendblad",    wn: "Achillea millefolium",       family: "Asteraceae",    color: "#E2A02C", height_cm: 60, diameter_m: 0.75, bloom: [6,7,8,9],       pollinator: ["bees","butterflies","hoverflies"], care: 2 },
+  rudbeckia: { vn: "Zonnehoed (gele)", wn: "Rudbeckia fulgida",        family: "Asteraceae",    color: "#E8B936", height_cm: 65, diameter_m: 0.5, bloom: [7,8,9,10],      pollinator: ["bees","butterflies"], care: 2 },
+  allium:    { vn: "Sieruí",         wn: "Allium 'Globemaster'",       family: "Amaryllidaceae",color: "#9376B8", height_cm: 90, diameter_m: 0.3, bloom: [5,6],           pollinator: ["bees"],               care: 1 },
+  verbena:   { vn: "IJzerhard",      wn: "Verbena bonariensis",        family: "Verbenaceae",   color: "#B689D4", height_cm: 150, diameter_m: 0.5, bloom: [7,8,9,10],     pollinator: ["bees","butterflies"], care: 2 },
+  stipa:     { vn: "Vedergras",      wn: "Stipa tenuissima",           family: "Poaceae",       color: "#D4C896", height_cm: 70, diameter_m: 0.5, bloom: [],              pollinator: [],                     care: 1 },
+  geranium:  { vn: "Ooievaarsbek",   wn: "Geranium 'Rozanne'",         family: "Geraniaceae",   color: "#6B7FC4", height_cm: 40, diameter_m: 0.8, bloom: [6,7,8,9,10],    pollinator: ["bees"],               care: 1 },
+};
+
+// Plant placements (id, species key, x_m, y_m, status)
+// Coordinates roughly designed for visual balance + intentional overlap cases
+const PLANTS = [
+  { id: 1,  s: "lavendel",  x: 1.2,  y: 8.5,  status: "healthy"    },
+  { id: 2,  s: "lavendel",  x: 2.0,  y: 8.4,  status: "healthy"    },
+  { id: 3,  s: "lavendel",  x: 2.8,  y: 8.6,  status: "healthy"    },
+  { id: 4,  s: "nepeta",    x: 4.0,  y: 8.7,  status: "healthy"    },
+  { id: 5,  s: "nepeta",    x: 5.0,  y: 8.7,  status: "healthy"    },
+  { id: 6,  s: "geranium",  x: 6.4,  y: 8.4,  status: "healthy"    },
+  { id: 7,  s: "geranium",  x: 8.0,  y: 8.5,  status: "concerning" },
+  { id: 8,  s: "salvia",    x: 1.8,  y: 7.0,  status: "healthy"    },
+  { id: 9,  s: "salvia",    x: 2.6,  y: 6.9,  status: "healthy"    },
+  { id: 10, s: "salvia",    x: 3.4,  y: 7.0,  status: "healthy"    },
+  { id: 11, s: "echinacea", x: 4.6,  y: 6.8,  status: "healthy"    },
+  { id: 12, s: "echinacea", x: 5.5,  y: 6.6,  status: "healthy"    },
+  { id: 13, s: "echinacea", x: 6.5,  y: 6.8,  status: "healthy"    },
+  { id: 14, s: "echinacea", x: 7.5,  y: 6.7,  status: "healthy"    },
+  { id: 15, s: "achillea",  x: 9.0,  y: 7.5,  status: "healthy"    },
+  { id: 16, s: "achillea",  x: 10.2, y: 7.7,  status: "healthy"    },
+  { id: 17, s: "rudbeckia", x: 11.5, y: 7.2,  status: "healthy"    },
+  { id: 18, s: "rudbeckia", x: 12.4, y: 7.5,  status: "healthy"    },
+  { id: 19, s: "rudbeckia", x: 13.4, y: 7.2,  status: "healthy"    },
+  { id: 20, s: "allium",    x: 9.5,  y: 5.0,  status: "healthy"    },
+  { id: 21, s: "allium",    x: 11.0, y: 5.0,  status: "healthy"    },
+  { id: 22, s: "verbena",   x: 3.0,  y: 4.5,  status: "healthy"    },
+  { id: 23, s: "verbena",   x: 6.0,  y: 4.0,  status: "healthy"    },
+  { id: 24, s: "verbena",   x: 13.0, y: 5.0,  status: "healthy"    },
+  { id: 25, s: "stipa",     x: 5.0,  y: 5.5,  status: "healthy"    },
+  { id: 26, s: "stipa",     x: 8.0,  y: 5.5,  status: "healthy"    },
+  { id: 27, s: "stipa",     x: 14.0, y: 6.0,  status: "concerning" },
+];
+
+// Companion relationships (good/bad). Symmetric per species pair.
+const COMPANIONS = {
+  lavendel:  { good: ["salvia", "nepeta", "echinacea"], bad: [] },
+  salvia:    { good: ["lavendel", "nepeta", "echinacea", "rudbeckia"], bad: [] },
+  echinacea: { good: ["salvia", "rudbeckia", "lavendel", "verbena"], bad: [] },
+  nepeta:    { good: ["lavendel", "salvia", "geranium"], bad: [] },
+  achillea:  { good: ["echinacea", "rudbeckia"], bad: ["geranium"] },   // achillea is mildly allelopathic
+  rudbeckia: { good: ["salvia", "echinacea", "achillea", "verbena"], bad: [] },
+  allium:    { good: ["geranium", "rudbeckia"], bad: [] },
+  verbena:   { good: ["echinacea", "rudbeckia", "geranium"], bad: [] },
+  stipa:     { good: ["echinacea", "verbena"], bad: [] },
+  geranium:  { good: ["nepeta", "allium", "verbena"], bad: ["achillea"] },
+};
+
+const MONTH_NL = ["Januari","Februari","Maart","April","Mei","Juni","Juli","Augustus","September","Oktober","November","December"];
+
+// ═══════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════
+let state = {
+  tab: "2d",
+  selectedId: null,
+  draggingId: null,
+  dragOffset: null,
+  showGrid: false,
+  showLabels: true,
+  month: 6,
+  plants: PLANTS.map(p => ({ ...p })),
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
+function speciesOf(p) { return SPECIES[p.s]; }
+function px(m) { return m * SCALE; }
+function isBloomingIn(species, month) { return species.bloom.includes(month); }
+
+// Compute overlaps: returns list of { aId, bId, severity: "light"|"severe" }
+function computeOverlaps(plants) {
+  const out = [];
+  for (let i = 0; i < plants.length; i++) {
+    for (let j = i + 1; j < plants.length; j++) {
+      const a = plants[i], b = plants[j];
+      const sa = speciesOf(a), sb = speciesOf(b);
+      const dx = (a.x - b.x), dy = (a.y - b.y);
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const r_sum = (sa.diameter_m + sb.diameter_m) / 2; // sum of radii
+      if (dist < r_sum * 0.6) out.push({ aId: a.id, bId: b.id, severity: "severe", overlap: r_sum - dist });
+      else if (dist < r_sum)  out.push({ aId: a.id, bId: b.id, severity: "light",  overlap: r_sum - dist });
+    }
+  }
+  return out;
+}
+
+// Color tinted by season state (bloom-color when blooming, gray-green when foliage, faded when dormant)
+function plantColorForSeason(p, month) {
+  const sp = speciesOf(p);
+  if (sp.bloom.length === 0) return sp.color; // grass etc.
+  if (isBloomingIn(sp, month)) return sp.color;
+  // Foliage period: April-October roughly
+  if (month >= 4 && month <= 10) return "#7FA078"; // moss-400 foliage
+  return "#A8C09A"; // dormant: light moss-300, dimmed in CSS
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER: SVG CANVAS
+// ═══════════════════════════════════════════════════════════════════
+function renderCanvas() {
+  const svg = $("#svg-canvas");
+  const w = ZONE.width_m * SCALE;
+  const h = ZONE.height_m * SCALE;
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.innerHTML = "";
+
+  // Border outline (zone shape)
+  const ns = "http://www.w3.org/2000/svg";
+  const border = document.createElementNS(ns, "rect");
+  border.setAttribute("x", 4);
+  border.setAttribute("y", 4);
+  border.setAttribute("width", w - 8);
+  border.setAttribute("height", h - 8);
+  border.setAttribute("rx", 8);
+  border.setAttribute("fill", "none");
+  border.setAttribute("stroke", "#7FA078");
+  border.setAttribute("stroke-width", 2);
+  border.setAttribute("stroke-dasharray", "6 4");
+  border.setAttribute("opacity", 0.6);
+  svg.appendChild(border);
+
+  // Overlaps first (so circles render on top)
+  const overlaps = computeOverlaps(state.plants);
+  if (state.tab !== "companions") {
+    overlaps.forEach(o => {
+      const a = state.plants.find(p => p.id === o.aId);
+      const b = state.plants.find(p => p.id === o.bId);
+      if (!a || !b) return;
+      const mx = (a.x + b.x) / 2 * SCALE;
+      const my = (a.y + b.y) / 2 * SCALE;
+      const dot = document.createElementNS(ns, "circle");
+      dot.setAttribute("cx", mx);
+      dot.setAttribute("cy", my);
+      dot.setAttribute("r", o.severity === "severe" ? 6 : 5);
+      dot.setAttribute("class", "overlap-marker " + (o.severity === "severe" ? "severe" : ""));
+      svg.appendChild(dot);
+    });
+  }
+
+  // Companion mode: determine highlighting
+  let goodSet = new Set(), badSet = new Set(), selectedSp = null;
+  if (state.tab === "companions" && state.selectedId) {
+    const sel = state.plants.find(p => p.id === state.selectedId);
+    if (sel) {
+      selectedSp = sel.s;
+      const rel = COMPANIONS[sel.s] || { good: [], bad: [] };
+      state.plants.forEach(p => {
+        if (p.id === sel.id) return;
+        if (rel.good.includes(p.s)) goodSet.add(p.id);
+        else if (rel.bad.includes(p.s)) badSet.add(p.id);
+      });
+    }
+  }
+
+  // Plants
+  state.plants.forEach(p => {
+    const sp = speciesOf(p);
+    const r = (sp.diameter_m * SCALE) / 2;
+    const cx = p.x * SCALE;
+    const cy = p.y * SCALE;
+
+    const g = document.createElementNS(ns, "g");
+    g.setAttribute("data-id", p.id);
+
+    // 3D mode: add height bar
+    if (state.tab === "3d") {
+      const barHeight = (sp.height_cm / 200) * SCALE * 1.5; // scaled
+      const bar = document.createElementNS(ns, "line");
+      bar.setAttribute("x1", cx);
+      bar.setAttribute("y1", cy);
+      bar.setAttribute("x2", cx);
+      bar.setAttribute("y2", cy - barHeight);
+      bar.setAttribute("class", "height-bar");
+      bar.setAttribute("stroke", sp.color);
+      g.appendChild(bar);
+
+      const top = document.createElementNS(ns, "circle");
+      top.setAttribute("cx", cx);
+      top.setAttribute("cy", cy - barHeight);
+      top.setAttribute("r", Math.min(r, 14));
+      top.setAttribute("fill", sp.color);
+      top.setAttribute("opacity", 0.95);
+      g.appendChild(top);
+
+      // Ground footprint
+      const ground = document.createElementNS(ns, "ellipse");
+      ground.setAttribute("cx", cx);
+      ground.setAttribute("cy", cy);
+      ground.setAttribute("rx", r);
+      ground.setAttribute("ry", r * 0.4);
+      ground.setAttribute("fill", sp.color);
+      ground.setAttribute("opacity", 0.25);
+      ground.setAttribute("stroke", sp.color);
+      ground.setAttribute("stroke-width", 1);
+      g.appendChild(ground);
+    } else {
+      // 2D / seasons / companions / analyse: standard circle
+      const circle = document.createElementNS(ns, "circle");
+      circle.setAttribute("cx", cx);
+      circle.setAttribute("cy", cy);
+      circle.setAttribute("r", r);
+      circle.setAttribute("fill", state.tab === "seasons" ? plantColorForSeason(p, state.month) : sp.color);
+      circle.setAttribute("stroke", "rgba(31, 48, 38, 0.4)");
+      circle.setAttribute("stroke-width", 1.5);
+      circle.setAttribute("opacity", 0.78);
+      circle.setAttribute("class", "plant-circle");
+
+      // Apply classes per mode
+      if (state.tab === "companions" && selectedSp) {
+        if (p.id === state.selectedId) circle.classList.add("selected");
+        else if (goodSet.has(p.id)) circle.classList.add("companion-good");
+        else if (badSet.has(p.id)) circle.classList.add("companion-bad");
+        else circle.classList.add("companion-neutral");
+      }
+      if (state.selectedId === p.id && state.tab !== "companions") circle.classList.add("selected");
+      if (state.tab === "seasons" && !isBloomingIn(sp, state.month) && (state.month < 4 || state.month > 10) && sp.bloom.length > 0) {
+        circle.classList.add("dormant");
+      }
+      g.appendChild(circle);
+
+      // Status ring (concerning/dead)
+      if (p.status !== "healthy") {
+        const ring = document.createElementNS(ns, "circle");
+        ring.setAttribute("cx", cx);
+        ring.setAttribute("cy", cy);
+        ring.setAttribute("r", r + 3);
+        ring.setAttribute("class", "status-ring");
+        ring.setAttribute("stroke", p.status === "concerning" ? "#D89216" : "#9C3D2E");
+        g.appendChild(ring);
+      }
+    }
+
+    // Label (initials)
+    if (state.showLabels) {
+      const label = document.createElementNS(ns, "text");
+      label.setAttribute("x", cx);
+      label.setAttribute("y", cy + 4);
+      label.setAttribute("text-anchor", "middle");
+      label.setAttribute("class", "plant-label");
+      label.setAttribute("fill", "rgba(31, 48, 38, 0.85)");
+      // Initials: first letter of vn + first letter of second word if exists
+      const vn = sp.vn;
+      const init = vn.length > 1 ? vn[0] + vn[1].toLowerCase() : vn[0];
+      label.textContent = init;
+      g.appendChild(label);
+    }
+
+    svg.appendChild(g);
+
+    // Wire up interactions
+    const circleEl = g.querySelector("circle, ellipse");
+    if (circleEl) {
+      circleEl.addEventListener("mousedown", (e) => onPlantMouseDown(e, p.id));
+      circleEl.addEventListener("click", (e) => { e.stopPropagation(); onPlantClick(p.id); });
+    }
+  });
+
+  updateLegendStats(overlaps);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER: PLANT LIST PANEL
+// ═══════════════════════════════════════════════════════════════════
+function renderPlantList() {
+  const list = $("#plant-list");
+  const items = state.plants;
+  list.innerHTML = "";
+
+  // Group by species
+  const grouped = {};
+  items.forEach(p => {
+    if (!grouped[p.s]) grouped[p.s] = [];
+    grouped[p.s].push(p);
+  });
+
+  Object.entries(grouped).forEach(([sKey, ps]) => {
+    const sp = SPECIES[sKey];
+    const row = document.createElement("div");
+    const isSelected = ps.some(p => p.id === state.selectedId);
+    row.className = "plant-row flex items-center gap-3 p-2.5 rounded-md " + (isSelected ? "selected" : "");
+    row.innerHTML = `
+      <span class="w-3.5 h-3.5 rounded-full flex-shrink-0" style="background:${sp.color}"></span>
+      <div class="flex-1 min-w-0">
+        <div class="text-sm font-medium leading-tight">${sp.vn}</div>
+        <div class="text-xs text-surface-mute scientific leading-tight truncate">${sp.wn}</div>
+      </div>
+      <div class="text-right">
+        <div class="text-xs font-mono text-moss-700">${ps.length}×</div>
+        <div class="text-xs text-surface-mute">${formatBloom(sp.bloom)}</div>
+      </div>
+    `;
+    row.addEventListener("click", () => {
+      onPlantClick(ps[0].id);
+    });
+    list.appendChild(row);
+  });
+
+  $("#panel-count").textContent = items.length;
+}
+
+function formatBloom(months) {
+  if (months.length === 0) return "—";
+  const labels = ["jan","feb","mrt","apr","mei","jun","jul","aug","sep","okt","nov","dec"];
+  return labels[months[0]-1] + "–" + labels[months[months.length-1]-1];
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER: COMPANION DETAIL
+// ═══════════════════════════════════════════════════════════════════
+function renderCompanionDetail() {
+  const wrap = $("#companion-detail");
+  if (state.tab !== "companions" || !state.selectedId) {
+    wrap.classList.add("hidden");
+    wrap.innerHTML = "";
+    return;
+  }
+  const p = state.plants.find(pl => pl.id === state.selectedId);
+  if (!p) return;
+  const sp = speciesOf(p);
+  const rel = COMPANIONS[p.s] || { good: [], bad: [] };
+  const goodNames = rel.good.map(k => SPECIES[k].vn);
+  const badNames = rel.bad.map(k => SPECIES[k].vn);
+
+  wrap.classList.remove("hidden");
+  wrap.innerHTML = `
+    <div class="flex items-center gap-2 mb-3">
+      <span class="w-3.5 h-3.5 rounded-full" style="background:${sp.color}"></span>
+      <div class="text-sm font-medium">${sp.vn}</div>
+    </div>
+    <div class="space-y-3">
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <i data-lucide="heart" style="width:14px;height:14px;" class="text-moss-700"></i>
+          <div class="text-xs font-medium text-moss-700">Goede buren (${goodNames.length})</div>
+        </div>
+        <div class="text-xs text-moss-900 pl-5">${goodNames.length > 0 ? goodNames.join(", ") : "—"}</div>
+      </div>
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <i data-lucide="x" style="width:14px;height:14px;" class="text-rust-500"></i>
+          <div class="text-xs font-medium text-rust-700">Vermijd in buurt (${badNames.length})</div>
+        </div>
+        <div class="text-xs text-moss-900 pl-5">${badNames.length > 0 ? badNames.join(", ") : "—"}</div>
+      </div>
+    </div>
+  `;
+  if (window.lucide) lucide.createIcons();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER: ANALYSE PANEL
+// ═══════════════════════════════════════════════════════════════════
+function renderAnalysePanel() {
+  const wrap = $("#analyse-panel");
+  if (state.tab !== "analyse") {
+    wrap.classList.add("hidden");
+    return;
+  }
+  wrap.classList.remove("hidden");
+
+  // Calculate stats
+  const plants = state.plants;
+  const overlaps = computeOverlaps(plants);
+  const lightOverlap = overlaps.filter(o => o.severity === "light").length;
+  const severeOverlap = overlaps.filter(o => o.severity === "severe").length;
+
+  // Ruimtegebruik
+  const totalPlantArea = plants.reduce((s, p) => {
+    const sp = speciesOf(p);
+    return s + Math.PI * Math.pow(sp.diameter_m / 2, 2);
+  }, 0);
+  const zoneArea = ZONE.width_m * ZONE.height_m;
+  const usagePct = Math.min(100, Math.round((totalPlantArea / zoneArea) * 100));
+
+  // Biodiversiteit: unique families + pollinator coverage
+  const familySet = new Set(plants.map(p => speciesOf(p).family));
+  const families = familySet.size;
+  const pollinatorPct = Math.round(
+    plants.filter(p => speciesOf(p).pollinator.length > 0).length / plants.length * 100
+  );
+
+  // Bloeispreiding: count months with at least one plant blooming
+  const bloomCoverage = new Array(12).fill(0);
+  plants.forEach(p => speciesOf(p).bloom.forEach(m => bloomCoverage[m-1]++));
+  const monthsWithBloom = bloomCoverage.filter(c => c > 0).length;
+  const bloomPct = Math.round((monthsWithBloom / 12) * 100);
+
+  // Onderhoudsdruk: gemiddelde care-score
+  const avgCare = (plants.reduce((s, p) => s + speciesOf(p).care, 0) / plants.length).toFixed(1);
+  const caretone = avgCare < 1.4 ? "Laag" : avgCare < 2.2 ? "Medium" : "Hoog";
+
+  wrap.innerHTML = `
+    <!-- Ruimtegebruik -->
+    <div class="bg-white rounded-lg shadow-sm p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="font-semibold text-base">Ruimtegebruik</h4>
+        <span class="text-2xl font-display font-bold text-moss-700">${usagePct}%</span>
+      </div>
+      <div class="bar-track mb-2"><div class="bar-fill bg-moss-500" style="width:${usagePct}%"></div></div>
+      <div class="text-xs text-surface-mute">${totalPlantArea.toFixed(1)} m² beplant op ${zoneArea} m² zone</div>
+      <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
+        <div class="p-2.5 rounded-md bg-amber-100/60">
+          <div class="text-amber-700 font-medium">${lightOverlap}</div>
+          <div class="text-surface-mute">Lichte overlap</div>
+        </div>
+        <div class="p-2.5 rounded-md bg-rust-100/60">
+          <div class="text-rust-700 font-medium">${severeOverlap}</div>
+          <div class="text-surface-mute">Te dicht</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Biodiversiteit -->
+    <div class="bg-white rounded-lg shadow-sm p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="font-semibold text-base">Biodiversiteit</h4>
+        <span class="text-2xl font-display font-bold text-moss-700">${Math.round((families/8)*100)}<span class="text-sm text-surface-mute">/100</span></span>
+      </div>
+      <div class="grid grid-cols-2 gap-3 text-sm mt-3">
+        <div>
+          <div class="text-xs text-surface-mute mb-0.5">Families</div>
+          <div class="text-lg font-display font-semibold">${families}</div>
+        </div>
+        <div>
+          <div class="text-xs text-surface-mute mb-0.5">Bestuiverplanten</div>
+          <div class="text-lg font-display font-semibold">${pollinatorPct}%</div>
+        </div>
+      </div>
+      <div class="mt-3 flex flex-wrap gap-1.5">
+        ${[...familySet].map(f => `<span class="text-xs px-2 py-0.5 rounded-full bg-moss-100 text-moss-700">${f}</span>`).join("")}
+      </div>
+    </div>
+
+    <!-- Bloeispreiding -->
+    <div class="bg-white rounded-lg shadow-sm p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="font-semibold text-base">Bloeispreiding</h4>
+        <span class="text-2xl font-display font-bold text-moss-700">${bloomPct}%</span>
+      </div>
+      <div class="text-xs text-surface-mute mb-2">${monthsWithBloom} van 12 maanden bloei</div>
+      <div class="grid grid-cols-12 gap-1 mt-3">
+        ${bloomCoverage.map((c, i) => `
+          <div class="text-center">
+            <div class="gantt-cell mb-1" style="background: ${c > 0 ? '#8F6BB8' : '#F4F1EA'}; opacity: ${c > 0 ? Math.min(1, 0.4 + c * 0.15) : 0.6};"></div>
+            <div class="text-xs text-surface-mute">${["j","f","m","a","m","j","j","a","s","o","n","d"][i]}</div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+
+    <!-- Onderhoudsdruk -->
+    <div class="bg-white rounded-lg shadow-sm p-5">
+      <div class="flex items-center justify-between mb-3">
+        <h4 class="font-semibold text-base">Onderhoudsdruk</h4>
+        <span class="text-2xl font-display font-bold ${caretone === 'Hoog' ? 'text-rust-700' : (caretone === 'Medium' ? 'text-amber-700' : 'text-moss-700')}">${caretone}</span>
+      </div>
+      <div class="bar-track mb-2">
+        <div class="bar-fill" style="width: ${(avgCare/3)*100}%; background: ${caretone === 'Hoog' ? '#9C3D2E' : (caretone === 'Medium' ? '#D89216' : '#3D6B4D')}"></div>
+      </div>
+      <div class="text-xs text-surface-mute">Gemiddelde care-score ${avgCare}/3 over ${plants.length} planten</div>
+      <div class="mt-4 text-xs space-y-1.5">
+        <div class="flex items-center justify-between"><span>Snoei-taken/jaar</span><span class="font-mono">~${plants.length}×</span></div>
+        <div class="flex items-center justify-between"><span>Water-taken (zomer/week)</span><span class="font-mono">~${Math.round(plants.length/4)}×</span></div>
+        <div class="flex items-center justify-between"><span>Bemesting/jaar</span><span class="font-mono">2×</span></div>
+      </div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INTERACTIONS
+// ═══════════════════════════════════════════════════════════════════
+function onPlantClick(id) {
+  state.selectedId = state.selectedId === id ? null : id;
+  renderAll();
+}
+
+function onPlantMouseDown(e, id) {
+  if (state.tab === "3d" || state.tab === "analyse") return;
+  e.preventDefault();
+  e.stopPropagation();
+  state.draggingId = id;
+  const svg = $("#svg-canvas");
+  const ctm = svg.getScreenCTM();
+  const pt = svg.createSVGPoint();
+  pt.x = e.clientX; pt.y = e.clientY;
+  const svgPt = pt.matrixTransform(ctm.inverse());
+  const p = state.plants.find(pl => pl.id === id);
+  state.dragOffset = { dx: svgPt.x / SCALE - p.x, dy: svgPt.y / SCALE - p.y };
+  document.body.classList.add("dragging");
+}
+
+function onMouseMove(e) {
+  if (state.draggingId === null) return;
+  const svg = $("#svg-canvas");
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return;
+  const pt = svg.createSVGPoint();
+  pt.x = e.clientX; pt.y = e.clientY;
+  const svgPt = pt.matrixTransform(ctm.inverse());
+  const p = state.plants.find(pl => pl.id === state.draggingId);
+  if (!p) return;
+  p.x = Math.max(0.3, Math.min(ZONE.width_m - 0.3, svgPt.x / SCALE - state.dragOffset.dx));
+  p.y = Math.max(0.3, Math.min(ZONE.height_m - 0.3, svgPt.y / SCALE - state.dragOffset.dy));
+  renderCanvas(); // only canvas, not full re-render (faster)
+}
+
+function onMouseUp() {
+  if (state.draggingId !== null) {
+    state.draggingId = null;
+    state.dragOffset = null;
+    document.body.classList.remove("dragging");
+    renderPlantList(); // update list ordering if needed
+  }
+}
+
+document.addEventListener("mousemove", onMouseMove);
+document.addEventListener("mouseup", onMouseUp);
+
+// Tab switching
+$$("[data-tab]").forEach(tab => {
+  tab.addEventListener("click", () => {
+    state.tab = tab.dataset.tab;
+    if (state.tab !== "companions") state.selectedId = null; // reset selection between modes
+    $$("[data-tab]").forEach(t => t.classList.toggle("active", t === tab));
+    updateUIForTab();
+    renderAll();
+  });
+});
+
+// Tool buttons
+$$("[data-tool]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    $$("[data-tool]").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  });
+});
+
+// Grid toggle
+$("#grid-toggle").addEventListener("click", () => {
+  state.showGrid = !state.showGrid;
+  $("#grid-toggle").classList.toggle("active", state.showGrid);
+  $("#canvas-area").classList.toggle("grid-on", state.showGrid);
+});
+
+// Labels toggle
+$("#labels-toggle").addEventListener("click", () => {
+  state.showLabels = !state.showLabels;
+  $("#labels-toggle").classList.toggle("active", state.showLabels);
+  renderCanvas();
+});
+
+// Month slider
+$("#month-slider").addEventListener("input", (e) => {
+  state.month = parseInt(e.target.value, 10);
+  $("#month-label").textContent = MONTH_NL[state.month - 1];
+  renderCanvas();
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// TAB-SPECIFIC UI
+// ═══════════════════════════════════════════════════════════════════
+function updateUIForTab() {
+  const canvasArea = $("#canvas-area");
+  const seasonsBar = $("#seasons-bar");
+  const analysePanel = $("#analyse-panel");
+  const tipText = $("#tip-text");
+  const panelTitle = $("#panel-title");
+
+  // Reset transforms
+  canvasArea.classList.remove("iso");
+
+  // Show/hide bars
+  seasonsBar.classList.toggle("hidden", state.tab !== "seasons");
+  analysePanel.classList.toggle("hidden", state.tab !== "analyse");
+  canvasArea.classList.toggle("hidden", state.tab === "analyse");
+
+  switch (state.tab) {
+    case "2d":
+      tipText.textContent = "Sleep planten om ze te verplaatsen. Cirkel = eindbreedte.";
+      panelTitle.textContent = "Planten in zone";
+      break;
+    case "3d":
+      canvasArea.classList.add("iso");
+      tipText.textContent = "Read-only voor planning van zichtlijnen en hoogteopbouw.";
+      panelTitle.textContent = "Planten in zone";
+      break;
+    case "seasons":
+      tipText.textContent = `Toont bloei en bladseizoen voor ${MONTH_NL[state.month - 1].toLowerCase()}. Grijze cirkels = winterrust.`;
+      panelTitle.textContent = "Planten in zone";
+      break;
+    case "companions":
+      tipText.textContent = state.selectedId
+        ? "Klik op een andere plant om buren te vergelijken."
+        : "Klik op een plant om goede en slechte buren te zien.";
+      panelTitle.textContent = state.selectedId ? "Buren-analyse" : "Planten in zone";
+      break;
+    case "analyse":
+      tipText.textContent = "Samenvattende statistieken voor deze zone.";
+      panelTitle.textContent = "Soortenoverzicht";
+      break;
+  }
+}
+
+function updateLegendStats(overlaps) {
+  const light = overlaps.filter(o => o.severity === "light").length;
+  const severe = overlaps.filter(o => o.severity === "severe").length;
+  const stats = $("#legend-stats");
+  if (state.tab === "companions" || state.tab === "analyse") {
+    stats.textContent = "";
+  } else {
+    stats.textContent = `${light} licht · ${severe} te dicht`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MASTER RENDER
+// ═══════════════════════════════════════════════════════════════════
+function renderAll() {
+  renderCanvas();
+  renderPlantList();
+  renderCompanionDetail();
+  renderAnalysePanel();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════
+lucide.createIcons();
+updateUIForTab();
+renderAll();
+
+</script>
+
+</body>
+</html>

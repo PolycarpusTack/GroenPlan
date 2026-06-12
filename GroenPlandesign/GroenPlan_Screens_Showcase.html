@@ -1,0 +1,1903 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GroenPlan — Schermen showcase</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        moss: { 100:"#DCEAD8", 200:"#BCD4B3", 300:"#A8C09A", 400:"#7FA078", 500:"#3D6B4D", 600:"#326045", 700:"#2E5339", 800:"#264432", 900:"#1F3026" },
+        clay: { 400:"#C19A6B", 700:"#6E5234" },
+        sky:  { 200:"#A8C8D8", 500:"#4F8EA8" },
+        amber:{ 100:"#FAE9C5", 500:"#D89216", 700:"#8E5E0C" },
+        rust: { 100:"#F2DDD6", 500:"#9C3D2E", 700:"#62251C" },
+        bloom:{ 100:"#E5DCEF", 400:"#8F6BB8", 700:"#4A3169" },
+        surface: { DEFAULT:"#FFFFFF", alt:"#F4F1EA", bg:"#FAFAF4", border:"#E5E1D8", mute:"#808080" },
+      },
+      fontFamily: {
+        display: ['Fraunces', 'serif'],
+        sans:    ['Inter', 'sans-serif'],
+        mono:    ['JetBrains Mono', 'monospace'],
+      },
+    }
+  }
+}
+</script>
+
+<style>
+  body { background: #FAFAF4; color: #1F3026; font-family: 'Inter', sans-serif; }
+  h1, h2, h3, h4 { font-family: 'Fraunces', serif; color: #1F3026; }
+  [data-lucide] { width: 1em; height: 1em; }
+  .scientific { font-style: italic; }
+
+  /* Sticky nav */
+  .showcase-nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid #E5E1D8;
+  }
+  .showcase-nav a {
+    padding: 12px 16px; font-size: 13px; font-weight: 500; color: #808080;
+    transition: color 120ms; white-space: nowrap;
+  }
+  .showcase-nav a:hover { color: #2E5339; }
+  .showcase-nav a.active { color: #2E5339; }
+
+  /* Screen frame */
+  .screen-frame {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 12px 32px rgba(31, 48, 38, 0.08);
+    overflow: hidden;
+    border: 1px solid #E5E1D8;
+  }
+
+  /* Sub-nav rail (mini) */
+  .mini-rail {
+    width: 60px; flex-shrink: 0;
+    background: #2E5339;
+    display: flex; flex-direction: column;
+    align-items: center; padding: 16px 0;
+    color: #DCEAD8;
+  }
+  .mini-rail-item {
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px; cursor: pointer; transition: background 120ms;
+    margin-bottom: 4px;
+  }
+  .mini-rail-item:hover { background: rgba(255,255,255,0.08); }
+  .mini-rail-item.active { background: #3D6B4D; color: white; }
+
+  /* Tabs */
+  .tab {
+    position: relative; padding: 12px 18px; font-size: 14px; font-weight: 500;
+    color: #808080; cursor: pointer; transition: color 180ms; display: flex; align-items: center; gap: 8px;
+  }
+  .tab:hover { color: #2E5339; }
+  .tab.active { color: #2E5339; }
+  .tab.active::after {
+    content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px;
+    height: 2px; background: #2E5339; border-radius: 2px;
+  }
+
+  /* Plant thumb gradients (reused from mobile) */
+  .echinacea-thumb { background: radial-gradient(circle at 50% 45%, #D27FAA 0%, #B8568C 35%, #6B3253 70%, #3a1c2f 100%); }
+  .lavendel-thumb  { background: radial-gradient(circle at 50% 45%, #B89AE3 0%, #8F6BB8 35%, #5A4380 70%, #2E2347 100%); }
+  .geranium-thumb  { background: radial-gradient(circle at 50% 45%, #8FA3CF 0%, #6B7FC4 40%, #4A5A8F 70%, #2A3450 100%); }
+  .salvia-thumb    { background: radial-gradient(circle at 50% 45%, #8068A8 0%, #5A3E83 40%, #3F2A5C 70%, #221636 100%); }
+  .achillea-thumb  { background: radial-gradient(circle at 50% 45%, #F0BA3F 0%, #E2A02C 40%, #A77418 70%, #5C400D 100%); }
+  .rudbeckia-thumb { background: radial-gradient(circle at 50% 45%, #F4C649 0%, #E8B936 40%, #B08423 70%, #5C460F 100%); }
+  .stipa-thumb     { background: radial-gradient(circle at 50% 45%, #E2D7A8 0%, #D4C896 40%, #968A60 70%, #4F4830 100%); }
+  .nepeta-thumb    { background: radial-gradient(circle at 50% 45%, #9AB5DD 0%, #7B9AC8 40%, #4F6890 70%, #283750 100%); }
+  .allium-thumb    { background: radial-gradient(circle at 50% 45%, #B5A2D2 0%, #9376B8 40%, #614A82 70%, #2F2244 100%); }
+  .verbena-thumb   { background: radial-gradient(circle at 50% 45%, #D5B0E8 0%, #B689D4 40%, #82559F 70%, #432A55 100%); }
+  .roos-thumb      { background: radial-gradient(circle at 50% 45%, #E89BA5 0%, #C66476 40%, #8A3D49 70%, #4A1F26 100%); }
+  .tomaat-thumb    { background: radial-gradient(circle at 50% 45%, #E27553 0%, #B84F30 40%, #7C3018 70%, #3F1808 100%); }
+  .courgette-thumb { background: radial-gradient(circle at 50% 45%, #A8C09A 0%, #7FA078 40%, #4A6243 70%, #243321 100%); }
+  .perovskia-thumb { background: radial-gradient(circle at 50% 45%, #C5C0DC 0%, #9F9BBC 40%, #6E6A92 70%, #383454 100%); }
+
+  /* Match score badge */
+  .match-badge {
+    position: absolute; bottom: 8px; left: 8px;
+    padding: 4px 10px; border-radius: 999px;
+    font-size: 12px; font-weight: 600;
+    background: rgba(46, 83, 57, 0.92); color: white;
+    backdrop-filter: blur(4px);
+  }
+  .match-badge.warn { background: rgba(216, 146, 22, 0.92); }
+
+  /* Source attribution chip */
+  .source-chip {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 10px; color: #808080; font-style: italic;
+  }
+  .source-chip.review { color: #8E5E0C; }
+
+  /* Status dot */
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+  /* Gantt cell */
+  .gantt-cell { height: 12px; border-radius: 3px; transition: all 120ms; }
+  .gantt-cell:hover { transform: scaleY(1.5); }
+
+  /* Tuinkaart polygons */
+  .zone-poly {
+    fill-opacity: 0.55;
+    stroke-width: 1.5;
+    stroke: #1F3026;
+    cursor: pointer;
+    transition: fill-opacity 180ms;
+  }
+  .zone-poly:hover { fill-opacity: 0.78; }
+
+  /* Section anchor offsets */
+  .anchor { scroll-margin-top: 80px; }
+
+  /* Range slider */
+  input[type="range"] { -webkit-appearance: none; height: 4px; background: #DCEAD8; border-radius: 2px; outline: none; }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px; background: #2E5339; border-radius: 50%; cursor: pointer;
+  }
+
+  /* Smooth interactions */
+  .clickable { cursor: pointer; transition: all 180ms cubic-bezier(0.22, 0.61, 0.36, 1); }
+  .clickable:hover { background: #F4F1EA; }
+
+  /* Focus rings */
+  button:focus-visible, .tab:focus-visible, input:focus-visible {
+    outline: none; box-shadow: 0 0 0 3px rgba(46, 83, 57, 0.25);
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     STICKY TOP NAV
+═══════════════════════════════════════════════════════════════════ -->
+<nav class="showcase-nav">
+  <div class="max-w-[1400px] mx-auto px-6 flex items-center gap-6 py-2 overflow-x-auto">
+    <div class="flex items-center gap-2 font-display font-bold flex-shrink-0">
+      <div class="w-7 h-7 bg-moss-700 rounded-md flex items-center justify-center">
+        <i data-lucide="leaf" style="width:14px;height:14px;" class="text-moss-100"></i>
+      </div>
+      <span class="text-sm">GroenPlan schermen</span>
+    </div>
+    <div class="flex items-center">
+      <a href="#mijn-tuin"   class="clickable rounded">Mijn Tuin</a>
+      <a href="#ontdek"      class="clickable rounded">Ontdek</a>
+      <a href="#plantdetail" class="clickable rounded">Plantdetail</a>
+      <a href="#architect"   class="clickable rounded">AI Tuin Architect</a>
+      <a href="#bloeikalender" class="clickable rounded">Bloeikalender</a>
+      <a href="#journal"     class="clickable rounded">Journal</a>
+    </div>
+  </div>
+</nav>
+
+<div class="max-w-[1400px] mx-auto px-6 py-10">
+
+<!-- Intro -->
+<div class="mb-12 text-center">
+  <h1 class="text-4xl font-display font-bold mb-3">GroenPlan — Schermen showcase</h1>
+  <p class="text-surface-mute max-w-2xl mx-auto">
+    Zes bureau-modus schermen die nog niet in eerdere prototypes voorkwamen.
+    Visuele mockups op productieniveau, gebaseerd op Design Brief v0.3 en de Component Inventory.
+  </p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SCREEN 1: MIJN TUIN
+═══════════════════════════════════════════════════════════════════ -->
+<section id="mijn-tuin" class="anchor mb-20">
+  <div class="mb-4 flex items-baseline gap-4">
+    <h2 class="text-2xl font-display font-bold">Mijn Tuin</h2>
+    <span class="text-sm text-surface-mute">Topdown tuinkaart met vier overlay-lagen — Kaart / Zon & schaduw / Irrigatie / Bodem</span>
+  </div>
+
+  <div class="screen-frame flex" style="height: 760px;">
+    <!-- Mini rail -->
+    <div class="mini-rail">
+      <div class="mini-rail-item" title="Dashboard"><i data-lucide="layout-dashboard"></i></div>
+      <div class="mini-rail-item active" title="Mijn Tuin"><i data-lucide="map"></i></div>
+      <div class="mini-rail-item" title="Zones"><i data-lucide="grid-3x3"></i></div>
+      <div class="mini-rail-item" title="Planten"><i data-lucide="leaf"></i></div>
+      <div class="mini-rail-item" title="Ontdek"><i data-lucide="compass"></i></div>
+      <div class="mini-rail-item" title="Taken"><i data-lucide="check-square"></i></div>
+      <div class="mini-rail-item" title="Kalender"><i data-lucide="calendar"></i></div>
+      <div class="mini-rail-item" title="Journal"><i data-lucide="book-open"></i></div>
+      <div class="mini-rail-item" title="AI Coach"><i data-lucide="sparkles"></i></div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-1 flex flex-col min-w-0">
+      <!-- Header -->
+      <header class="px-6 py-4 border-b border-surface-border flex items-center justify-between">
+        <div>
+          <h3 class="text-xl font-display font-bold leading-tight">Tuin De Eik</h3>
+          <p class="text-xs text-surface-mute">Brugge · 423 m² · Hardiness-zone 8b</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="px-3 py-1.5 rounded-md text-sm font-medium bg-white border border-surface-border hover:bg-surface-alt clickable flex items-center gap-1.5">
+            <i data-lucide="ruler" style="width:14px;height:14px;"></i> Meten
+          </button>
+          <button class="px-3 py-1.5 rounded-md text-sm font-medium bg-moss-700 text-white hover:bg-moss-600 clickable flex items-center gap-1.5">
+            <i data-lucide="plus" style="width:14px;height:14px;"></i> Zone toevoegen
+          </button>
+        </div>
+      </header>
+
+      <!-- Overlay tabs -->
+      <div class="px-6 border-b border-surface-border flex items-center">
+        <div class="tab active"><i data-lucide="map" style="width:14px;height:14px;"></i> Kaart</div>
+        <div class="tab"><i data-lucide="sun" style="width:14px;height:14px;"></i> Zon & schaduw</div>
+        <div class="tab"><i data-lucide="droplets" style="width:14px;height:14px;"></i> Irrigatie</div>
+        <div class="tab"><i data-lucide="layers" style="width:14px;height:14px;"></i> Bodem</div>
+        <div class="ml-auto text-xs text-surface-mute py-3">Zomer-modus</div>
+      </div>
+
+      <div class="flex-1 flex min-h-0">
+        <!-- Map area -->
+        <div class="flex-1 bg-gradient-to-br from-moss-100 to-moss-200 relative overflow-hidden">
+          <svg viewBox="0 0 800 600" class="w-full h-full">
+            <!-- Decorative trees scattered -->
+            <circle cx="50" cy="100" r="25" fill="#5C8A4F" opacity="0.4" />
+            <circle cx="730" cy="80" r="30" fill="#5C8A4F" opacity="0.4" />
+            <circle cx="780" cy="560" r="22" fill="#5C8A4F" opacity="0.4" />
+            <circle cx="40" cy="540" r="28" fill="#5C8A4F" opacity="0.4" />
+            <!-- House -->
+            <rect x="120" y="500" width="200" height="80" fill="#C19A6B" opacity="0.5" stroke="#1F3026" stroke-width="1.5" />
+            <text x="220" y="548" font-family="Inter" font-size="12" font-weight="500" fill="#1F3026" text-anchor="middle" opacity="0.7">huis</text>
+
+            <!-- Zones -->
+            <polygon class="zone-poly" points="120,80 480,80 480,260 120,260" fill="#3D6B4D" />
+            <text x="300" y="160" font-family="Fraunces" font-weight="600" font-size="20" fill="white" text-anchor="middle">Achterborder</text>
+            <text x="300" y="184" font-family="Inter" font-size="13" fill="white" opacity="0.85" text-anchor="middle">145 m² · Border · Vol zon</text>
+
+            <polygon class="zone-poly" points="520,80 700,80 700,220 520,220" fill="#D89216" />
+            <text x="610" y="140" font-family="Fraunces" font-weight="600" font-size="16" fill="white" text-anchor="middle">Moestuin</text>
+            <text x="610" y="160" font-family="Inter" font-size="11" fill="white" opacity="0.85" text-anchor="middle">36 m²</text>
+            <!-- Drought warning dot -->
+            <circle cx="690" cy="92" r="6" fill="#9C3D2E" />
+
+            <polygon class="zone-poly" points="120,300 360,300 360,470 120,470" fill="#8F6BB8" fill-opacity="0.55" />
+            <text x="240" y="380" font-family="Fraunces" font-weight="600" font-size="18" fill="white" text-anchor="middle">Voortuin</text>
+            <text x="240" y="402" font-family="Inter" font-size="12" fill="white" opacity="0.85" text-anchor="middle">62 m²</text>
+
+            <polygon class="zone-poly" points="400,260 500,260 500,360 400,360" fill="#7FA078" />
+            <text x="450" y="305" font-family="Fraunces" font-weight="600" font-size="14" fill="white" text-anchor="middle">Kruidenhoek</text>
+            <text x="450" y="322" font-family="Inter" font-size="10" fill="white" opacity="0.85" text-anchor="middle">9 m²</text>
+
+            <polygon class="zone-poly" points="520,250 720,250 720,380 520,380" fill="#A8C09A" />
+            <text x="620" y="315" font-family="Fraunces" font-weight="600" font-size="16" fill="#1F3026" text-anchor="middle">Gazon</text>
+            <text x="620" y="333" font-family="Inter" font-size="11" fill="#1F3026" opacity="0.7" text-anchor="middle">120 m²</text>
+
+            <polygon class="zone-poly" points="540,410 660,410 660,490 540,490" fill="#A8C8D8" />
+            <text x="600" y="448" font-family="Fraunces" font-weight="600" font-size="13" fill="#1F3026" text-anchor="middle">Serre</text>
+            <text x="600" y="465" font-family="Inter" font-size="10" fill="#1F3026" opacity="0.7" text-anchor="middle">12 m²</text>
+            <!-- Frost warning -->
+            <circle cx="650" cy="420" r="5" fill="#9C3D2E" />
+
+            <polygon class="zone-poly" points="400,390 520,390 520,490 400,490" fill="#4F8EA8" fill-opacity="0.45" />
+            <text x="460" y="435" font-family="Fraunces" font-weight="600" font-size="13" fill="#1F3026" text-anchor="middle">Vijverrand</text>
+            <text x="460" y="450" font-family="Inter" font-size="10" fill="#1F3026" opacity="0.7" text-anchor="middle">24 m²</text>
+          </svg>
+
+          <!-- Scale ruler -->
+          <div class="absolute left-4 top-4 bg-white rounded-md shadow-sm px-3 py-1.5 text-xs font-mono flex items-center gap-2">
+            <span>5 m</span>
+            <span class="block w-16 h-0.5 bg-moss-900"></span>
+          </div>
+
+          <!-- Zoom controls -->
+          <div class="absolute right-4 top-4 flex flex-col bg-white rounded-md shadow-sm overflow-hidden">
+            <button class="w-9 h-9 flex items-center justify-center hover:bg-surface-alt clickable">
+              <i data-lucide="plus" style="width:15px;height:15px;"></i>
+            </button>
+            <button class="w-9 h-9 flex items-center justify-center hover:bg-surface-alt clickable border-t border-surface-border">
+              <i data-lucide="minus" style="width:15px;height:15px;"></i>
+            </button>
+            <button class="w-9 h-9 flex items-center justify-center hover:bg-surface-alt clickable border-t border-surface-border">
+              <i data-lucide="maximize" style="width:15px;height:15px;"></i>
+            </button>
+          </div>
+
+          <!-- Legend -->
+          <div class="absolute left-4 bottom-4 bg-white rounded-md shadow-sm px-3 py-2 flex items-center gap-3 text-xs">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-moss-500"></span> Border</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-amber-500"></span> Moestuin</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-bloom-400 opacity-55"></span> Sierperk</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-moss-300"></span> Gazon</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-rust-500"></span> Aandacht</span>
+          </div>
+        </div>
+
+        <!-- Right details panel -->
+        <aside class="w-80 border-l border-surface-border bg-white flex flex-col overflow-y-auto">
+          <div class="p-5 border-b border-surface-border">
+            <div class="flex items-center justify-between mb-1">
+              <h4 class="font-semibold text-base">Achterborder</h4>
+              <span class="w-2 h-2 rounded-full bg-moss-500"></span>
+            </div>
+            <p class="text-xs text-surface-mute">145 m² · Border · Zuid-georiënteerd</p>
+          </div>
+
+          <div class="p-5 space-y-4">
+            <div>
+              <div class="text-xs font-semibold text-surface-mute uppercase tracking-wider mb-2">Eigenschappen</div>
+              <div class="space-y-2 text-sm">
+                <div class="flex items-center justify-between">
+                  <span class="text-surface-mute flex items-center gap-2"><i data-lucide="layers" style="width:14px;height:14px;"></i> Grondsoort</span>
+                  <span>Leem</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-surface-mute flex items-center gap-2"><i data-lucide="droplet" style="width:14px;height:14px;"></i> pH</span>
+                  <span class="font-mono">6.4 <span class="text-xs text-surface-mute">(15 mei)</span></span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-surface-mute flex items-center gap-2"><i data-lucide="sun" style="width:14px;height:14px;"></i> Zon (zomer)</span>
+                  <span>Vol (>6u)</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-surface-mute flex items-center gap-2"><i data-lucide="moon" style="width:14px;height:14px;"></i> Zon (winter)</span>
+                  <span>Half (3–6u)</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-surface-mute flex items-center gap-2"><i data-lucide="droplets" style="width:14px;height:14px;"></i> Drainage</span>
+                  <span>Normaal</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-surface-mute flex items-center gap-2"><i data-lucide="compass" style="width:14px;height:14px;"></i> Oriëntatie</span>
+                  <span>Zuidwest</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-surface-mute flex items-center gap-2"><i data-lucide="trending-up" style="width:14px;height:14px;"></i> Helling</span>
+                  <span>Licht (5°)</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="text-xs font-semibold text-surface-mute uppercase tracking-wider mb-2">Microklimaat</div>
+              <p class="text-sm leading-snug">Beschut tegen noordwind door garagemuur. Warmtereflectie van bakstenen muur late namiddag.</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div class="p-3 rounded-md bg-surface-alt text-center">
+                <div class="font-display font-bold text-xl text-moss-700">23</div>
+                <div class="text-xs text-surface-mute">Planten</div>
+              </div>
+              <div class="p-3 rounded-md bg-surface-alt text-center">
+                <div class="font-display font-bold text-xl text-amber-700">2</div>
+                <div class="text-xs text-surface-mute">Open taken</div>
+              </div>
+            </div>
+
+            <button class="w-full bg-moss-700 hover:bg-moss-600 text-white px-3 py-2.5 rounded-md text-sm font-medium clickable flex items-center justify-center gap-2">
+              <i data-lucide="edit-3" style="width:14px;height:14px;"></i> Open Zone Designer
+            </button>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 grid grid-cols-3 gap-4 text-sm">
+    <div class="p-3 bg-surface-alt rounded-md">
+      <div class="font-semibold mb-1">Eén tuinkaart, vier lagen</div>
+      <p class="text-surface-mute leading-snug">Kaart toont zones als polygonen. De drie andere tabs hergebruiken exact dezelfde geometrie met een data-laag erop (zon-heatmap, drainage-classificatie, bodem-kleurcodering). Geen aparte UI's bouwen.</p>
+    </div>
+    <div class="p-3 bg-surface-alt rounded-md">
+      <div class="font-semibold mb-1">Rode dots = urgentie</div>
+      <p class="text-surface-mute leading-snug">Klein rood puntje per zone wanneer er kritische aandacht nodig is. In dit voorbeeld: vorst-alarm voor de Serre vannacht, droogte-alert in de Moestuin.</p>
+    </div>
+    <div class="p-3 bg-surface-alt rounded-md">
+      <div class="font-semibold mb-1">Details-paneel rechts</div>
+      <p class="text-surface-mute leading-snug">Klik een zone → details verschijnen rechts. Eigenschappen, microklimaat-notes, twee stat-cells, en de doorlink naar Zone Designer. Geen modal — context blijft zichtbaar.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SCREEN 2: ONTDEK
+═══════════════════════════════════════════════════════════════════ -->
+<section id="ontdek" class="anchor mb-20">
+  <div class="mb-4 flex items-baseline gap-4">
+    <h2 class="text-2xl font-display font-bold">Ontdek</h2>
+    <span class="text-sm text-surface-mute">Browse-laag voor nieuwe planten en combinaties — niet "zoek plant" maar "wat past in mijn zone?"</span>
+  </div>
+
+  <div class="screen-frame flex" style="height: 880px;">
+    <div class="mini-rail">
+      <div class="mini-rail-item"><i data-lucide="layout-dashboard"></i></div>
+      <div class="mini-rail-item"><i data-lucide="map"></i></div>
+      <div class="mini-rail-item"><i data-lucide="grid-3x3"></i></div>
+      <div class="mini-rail-item"><i data-lucide="leaf"></i></div>
+      <div class="mini-rail-item active"><i data-lucide="compass"></i></div>
+      <div class="mini-rail-item"><i data-lucide="check-square"></i></div>
+      <div class="mini-rail-item"><i data-lucide="calendar"></i></div>
+      <div class="mini-rail-item"><i data-lucide="book-open"></i></div>
+      <div class="mini-rail-item"><i data-lucide="sparkles"></i></div>
+    </div>
+
+    <div class="flex-1 flex flex-col min-w-0">
+      <!-- Header with search -->
+      <header class="px-6 py-4 border-b border-surface-border">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="text-xl font-display font-bold leading-tight">Ontdek</h3>
+            <p class="text-xs text-surface-mute">Vind planten die passen bij jouw tuin en wensen</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="relative">
+              <i data-lucide="search" style="width:14px;height:14px;" class="absolute left-3 top-1/2 -translate-y-1/2 text-surface-mute"></i>
+              <input class="bg-white border border-surface-border rounded-md py-2 pl-9 pr-3 text-sm w-72 outline-none focus:border-moss-500" placeholder="Zoek plant (NL, EN, wetenschappelijk)" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Active filter chips -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-xs text-surface-mute font-medium mr-1">Context:</span>
+          <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-moss-700 text-white flex items-center gap-1.5">
+            <i data-lucide="map-pin" style="width:11px;height:11px;"></i> Achterborder
+            <button><i data-lucide="x" style="width:11px;height:11px;"></i></button>
+          </span>
+          <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-white border border-surface-border">Zon: Vol</span>
+          <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-white border border-surface-border">Bodem: Leem</span>
+          <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-white border border-surface-border">Bloei: zomer</span>
+          <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-white border border-surface-border text-moss-700 flex items-center gap-1">
+            <i data-lucide="sliders-horizontal" style="width:11px;height:11px;"></i> Meer filters
+          </span>
+          <span class="ml-auto text-xs text-surface-mute">Sorteren: <b class="text-moss-700">Beste match ↓</b></span>
+        </div>
+      </header>
+
+      <div class="flex-1 flex min-h-0">
+        <!-- Filter sidebar -->
+        <aside class="w-64 border-r border-surface-border bg-white p-5 overflow-y-auto flex-shrink-0">
+          <div class="text-sm font-semibold mb-3">Filters</div>
+
+          <div class="space-y-4 text-sm">
+            <div>
+              <div class="text-xs font-semibold text-surface-mute uppercase tracking-wider mb-2">Licht</div>
+              <div class="space-y-1.5">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked class="accent-moss-700"> <i data-lucide="sun" style="width:14px;height:14px;" class="text-amber-500"></i> Vol zon
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" class="accent-moss-700"> <i data-lucide="cloud-sun" style="width:14px;height:14px;" class="text-amber-500"></i> Halfschaduw
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" class="accent-moss-700"> <i data-lucide="cloud" style="width:14px;height:14px;"></i> Schaduw
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <div class="text-xs font-semibold text-surface-mute uppercase tracking-wider mb-2">Onderhoud</div>
+              <input type="range" min="1" max="3" value="2" class="w-full">
+              <div class="flex justify-between text-xs text-surface-mute mt-1">
+                <span>Laag</span><span>Medium</span><span>Hoog</span>
+              </div>
+            </div>
+
+            <div>
+              <div class="text-xs font-semibold text-surface-mute uppercase tracking-wider mb-2">Hoogte</div>
+              <div class="flex items-center gap-2 text-xs font-mono">
+                <span>0</span>
+                <input type="range" min="0" max="200" value="100" class="flex-1">
+                <span>200 cm</span>
+              </div>
+            </div>
+
+            <div>
+              <div class="text-xs font-semibold text-surface-mute uppercase tracking-wider mb-2">Bloemkleur</div>
+              <div class="flex flex-wrap gap-1.5">
+                <button class="w-7 h-7 rounded-full ring-2 ring-moss-700" style="background:#8F6BB8"></button>
+                <button class="w-7 h-7 rounded-full ring-1 ring-surface-border" style="background:#D27FAA"></button>
+                <button class="w-7 h-7 rounded-full ring-1 ring-surface-border" style="background:#E2A02C"></button>
+                <button class="w-7 h-7 rounded-full ring-1 ring-surface-border" style="background:#7B9AC8"></button>
+                <button class="w-7 h-7 rounded-full ring-1 ring-surface-border" style="background:#9C3D2E"></button>
+                <button class="w-7 h-7 rounded-full ring-1 ring-surface-border" style="background:white"></button>
+                <button class="w-7 h-7 rounded-full ring-1 ring-surface-border bg-gradient-to-br from-amber-500 via-bloom-400 to-sky-500" title="Alle kleuren"></button>
+              </div>
+            </div>
+
+            <div>
+              <div class="text-xs font-semibold text-surface-mute uppercase tracking-wider mb-2">Bestuivers</div>
+              <div class="space-y-1.5">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked class="accent-moss-700"> 🐝 Bijen
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" class="accent-moss-700"> 🦋 Vlinders
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" class="accent-moss-700"> 🌙 Nachtvlinders
+                </label>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-surface-border space-y-1.5">
+              <label class="flex items-center justify-between cursor-pointer">
+                <span class="flex items-center gap-2">🇧🇪 Inheems</span>
+                <input type="checkbox" class="accent-moss-700">
+              </label>
+              <label class="flex items-center justify-between cursor-pointer">
+                <span class="flex items-center gap-2">🍓 Eetbaar</span>
+                <input type="checkbox" class="accent-moss-700">
+              </label>
+              <label class="flex items-center justify-between cursor-pointer">
+                <span class="flex items-center gap-2">🐈 Niet giftig huisdier</span>
+                <input type="checkbox" class="accent-moss-700">
+              </label>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Results grid -->
+        <div class="flex-1 overflow-y-auto p-6 bg-surface-bg">
+          <!-- Section: Aanbevolen voor Achterborder -->
+          <div class="mb-8">
+            <div class="flex items-baseline justify-between mb-4">
+              <h4 class="text-lg font-display font-semibold">Aanbevolen voor Achterborder</h4>
+              <span class="text-xs text-surface-mute">Gebaseerd op leem, vol zon, en gat in juli–augustus bloei</span>
+            </div>
+            <div class="grid grid-cols-4 gap-4">
+              <!-- Plant card 1 -->
+              <div class="bg-white rounded-lg overflow-hidden shadow-sm clickable hover:shadow-md">
+                <div class="aspect-[4/3] perovskia-thumb relative">
+                  <span class="match-badge">94% match</span>
+                </div>
+                <div class="p-3">
+                  <div class="text-sm font-medium leading-tight scientific">Perovskia atriplicifolia</div>
+                  <div class="text-xs text-surface-mute mt-0.5">Russische salie 'Blue Spire'</div>
+                  <div class="flex flex-wrap gap-1 mt-2">
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-amber-100 text-amber-700">jul–sep</span>
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-moss-100 text-moss-700">vol zon</span>
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-clay-400 bg-opacity-30 text-clay-700">droogte-tolerant</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg overflow-hidden shadow-sm clickable hover:shadow-md">
+                <div class="aspect-[4/3] echinacea-thumb relative">
+                  <span class="match-badge">91% match</span>
+                </div>
+                <div class="p-3">
+                  <div class="text-sm font-medium leading-tight scientific">Echinacea purpurea 'Magnus'</div>
+                  <div class="text-xs text-surface-mute mt-0.5">Zonnehoed</div>
+                  <div class="flex flex-wrap gap-1 mt-2">
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-amber-100 text-amber-700">jul–sep</span>
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-moss-100 text-moss-700">vol zon</span>
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-bloom-100 text-bloom-700">vlinders</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg overflow-hidden shadow-sm clickable hover:shadow-md">
+                <div class="aspect-[4/3] salvia-thumb relative">
+                  <span class="match-badge">89% match</span>
+                </div>
+                <div class="p-3">
+                  <div class="text-sm font-medium leading-tight scientific">Salvia nemorosa 'Caradonna'</div>
+                  <div class="text-xs text-surface-mute mt-0.5">Salie</div>
+                  <div class="flex flex-wrap gap-1 mt-2">
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-amber-100 text-amber-700">mei–sep</span>
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-moss-100 text-moss-700">vol zon</span>
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-bloom-100 text-bloom-700">bijen</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg overflow-hidden shadow-sm clickable hover:shadow-md">
+                <div class="aspect-[4/3] nepeta-thumb relative">
+                  <span class="match-badge">87% match</span>
+                </div>
+                <div class="p-3">
+                  <div class="text-sm font-medium leading-tight scientific">Nepeta faassenii 'Walker's Low'</div>
+                  <div class="text-xs text-surface-mute mt-0.5">Kattenkruid</div>
+                  <div class="flex flex-wrap gap-1 mt-2">
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-amber-100 text-amber-700">mei–aug</span>
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-moss-100 text-moss-700">vol zon</span>
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-bloom-100 text-bloom-700">bijen</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Bloeit wanneer Achterborder leeg valt -->
+          <div class="mb-8">
+            <div class="flex items-baseline justify-between mb-4">
+              <h4 class="text-lg font-display font-semibold">Bloeit wanneer je tuin leeg valt</h4>
+              <span class="text-xs text-surface-mute">September–oktober · 3 zones zonder bloei</span>
+            </div>
+            <div class="grid grid-cols-4 gap-4">
+              <div class="bg-white rounded-lg overflow-hidden shadow-sm clickable hover:shadow-md">
+                <div class="aspect-[4/3] rudbeckia-thumb relative">
+                  <span class="match-badge">88% match</span>
+                </div>
+                <div class="p-3">
+                  <div class="text-sm font-medium leading-tight scientific">Rudbeckia fulgida 'Goldsturm'</div>
+                  <div class="text-xs text-surface-mute mt-0.5">Gele zonnehoed</div>
+                  <div class="flex flex-wrap gap-1 mt-2">
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-amber-100 text-amber-700">aug–okt</span>
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-moss-100 text-moss-700">vol zon</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg overflow-hidden shadow-sm clickable hover:shadow-md">
+                <div class="aspect-[4/3] verbena-thumb relative">
+                  <span class="match-badge">85% match</span>
+                </div>
+                <div class="p-3">
+                  <div class="text-sm font-medium leading-tight scientific">Verbena bonariensis</div>
+                  <div class="text-xs text-surface-mute mt-0.5">IJzerhard</div>
+                  <div class="flex flex-wrap gap-1 mt-2">
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-amber-100 text-amber-700">jul–okt</span>
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-bloom-100 text-bloom-700">vlinders</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg overflow-hidden shadow-sm clickable hover:shadow-md">
+                <div class="aspect-[4/3] achillea-thumb relative">
+                  <span class="match-badge">82% match</span>
+                </div>
+                <div class="p-3">
+                  <div class="text-sm font-medium leading-tight scientific">Achillea 'Coronation Gold'</div>
+                  <div class="text-xs text-surface-mute mt-0.5">Duizendblad</div>
+                  <div class="flex flex-wrap gap-1 mt-2">
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-amber-100 text-amber-700">jul–okt</span>
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-moss-100 text-moss-700">vol zon</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg overflow-hidden shadow-sm clickable hover:shadow-md">
+                <div class="aspect-[4/3] stipa-thumb relative">
+                  <span class="match-badge warn">78% match</span>
+                </div>
+                <div class="p-3">
+                  <div class="text-sm font-medium leading-tight scientific">Stipa tenuissima</div>
+                  <div class="text-xs text-surface-mute mt-0.5">Vedergras</div>
+                  <div class="flex flex-wrap gap-1 mt-2">
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-moss-100 text-moss-700">vol zon</span>
+                    <span class="px-1.5 py-0.5 rounded text-xs bg-surface-alt text-surface-mute">structuur</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Plantcombinaties -->
+          <div>
+            <div class="flex items-baseline justify-between mb-4">
+              <h4 class="text-lg font-display font-semibold">Plantcombinaties voor je Achterborder</h4>
+              <span class="text-xs text-surface-mute">Borderrecepten · Seizoensmixen · Biodiversiteitspakketten</span>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="bg-white rounded-lg overflow-hidden shadow-sm clickable hover:shadow-md">
+                <div class="aspect-[5/3] relative" style="background: linear-gradient(135deg, #8F6BB8 0%, #5A3E83 40%, #D27FAA 70%, #B689D4 100%);">
+                  <span class="absolute top-3 left-3 px-2 py-1 rounded bg-white/90 text-xs font-medium">Borderrecept</span>
+                </div>
+                <div class="p-4">
+                  <div class="font-medium">Droge zonnige bijenborder</div>
+                  <p class="text-xs text-surface-mute mt-1 leading-snug">8 soorten · 12 m² · juni–oktober bloei · onderhoudsdruk laag</p>
+                  <div class="flex items-center gap-3 mt-3 text-xs">
+                    <span class="text-moss-700 font-medium">🐝 Bijen 9/10</span>
+                    <span class="text-surface-mute">·</span>
+                    <span class="text-surface-mute">€185–240</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg overflow-hidden shadow-sm clickable hover:shadow-md">
+                <div class="aspect-[5/3] relative" style="background: linear-gradient(135deg, #5A3E83 0%, #8F6BB8 35%, #B689D4 70%, #6B7FC4 100%);">
+                  <span class="absolute top-3 left-3 px-2 py-1 rounded bg-white/90 text-xs font-medium">Borderrecept</span>
+                </div>
+                <div class="p-4">
+                  <div class="font-medium">Paarse zomerborder</div>
+                  <p class="text-xs text-surface-mute mt-1 leading-snug">6 soorten · 8 m² · juni–september · monochrome paars</p>
+                  <div class="flex items-center gap-3 mt-3 text-xs">
+                    <span class="text-moss-700 font-medium">🦋 Vlinders 8/10</span>
+                    <span class="text-surface-mute">·</span>
+                    <span class="text-surface-mute">€140–180</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg overflow-hidden shadow-sm clickable hover:shadow-md">
+                <div class="aspect-[5/3] relative" style="background: linear-gradient(135deg, #D27FAA 0%, #E2A02C 30%, #8F6BB8 60%, #4F8EA8 100%);">
+                  <span class="absolute top-3 left-3 px-2 py-1 rounded bg-white/90 text-xs font-medium">Seizoensmix</span>
+                </div>
+                <div class="p-4">
+                  <div class="font-medium">Lange bloei maart–oktober</div>
+                  <p class="text-xs text-surface-mute mt-1 leading-snug">12 soorten · 18 m² · 8 maanden continu bloei</p>
+                  <div class="flex items-center gap-3 mt-3 text-xs">
+                    <span class="text-moss-700 font-medium">🌸 9/10 spreiding</span>
+                    <span class="text-surface-mute">·</span>
+                    <span class="text-surface-mute">€260–340</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 grid grid-cols-3 gap-4 text-sm">
+    <div class="p-3 bg-surface-alt rounded-md">
+      <div class="font-semibold mb-1">Context-pill bovenaan</div>
+      <p class="text-surface-mute leading-snug">"Achterborder" als verwijderbare chip toont dat de match-scores voor díe zone berekend zijn. Klik weg = browse vanuit hele tuin.</p>
+    </div>
+    <div class="p-3 bg-surface-alt rounded-md">
+      <div class="font-semibold mb-1">Secties met intent</div>
+      <p class="text-surface-mute leading-snug">"Aanbevolen voor Achterborder" / "Bloeit wanneer leeg valt" / "Plantcombinaties". Geen one-size-fits-all grid, maar curated rows met een waarom.</p>
+    </div>
+    <div class="p-3 bg-surface-alt rounded-md">
+      <div class="font-semibold mb-1">Match score in kleur</div>
+      <p class="text-surface-mute leading-snug">Mosgroen badge voor 85%+, amber voor 70–85%, geen lage scores zichtbaar in de aanbevolen-sectie (gefilterd op ≥70%).</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SCREEN 3: PLANTDETAIL
+═══════════════════════════════════════════════════════════════════ -->
+<section id="plantdetail" class="anchor mb-20">
+  <div class="mb-4 flex items-baseline gap-4">
+    <h2 class="text-2xl font-display font-bold">Plantdetail</h2>
+    <span class="text-sm text-surface-mute">Plant in jouw tuin — met bron-attributie per AI-veld</span>
+  </div>
+
+  <div class="screen-frame flex" style="height: 880px;">
+    <div class="mini-rail">
+      <div class="mini-rail-item"><i data-lucide="layout-dashboard"></i></div>
+      <div class="mini-rail-item"><i data-lucide="map"></i></div>
+      <div class="mini-rail-item"><i data-lucide="grid-3x3"></i></div>
+      <div class="mini-rail-item active"><i data-lucide="leaf"></i></div>
+      <div class="mini-rail-item"><i data-lucide="compass"></i></div>
+      <div class="mini-rail-item"><i data-lucide="check-square"></i></div>
+      <div class="mini-rail-item"><i data-lucide="calendar"></i></div>
+      <div class="mini-rail-item"><i data-lucide="book-open"></i></div>
+      <div class="mini-rail-item"><i data-lucide="sparkles"></i></div>
+    </div>
+
+    <div class="flex-1 flex flex-col min-w-0 overflow-y-auto bg-surface-bg">
+      <!-- Header -->
+      <header class="px-8 py-5 bg-white border-b border-surface-border flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <button class="w-9 h-9 rounded-md hover:bg-surface-alt flex items-center justify-center clickable">
+            <i data-lucide="arrow-left" style="width:18px;height:18px;"></i>
+          </button>
+          <div>
+            <h3 class="text-xl font-display font-bold scientific leading-tight">Lavandula angustifolia</h3>
+            <p class="text-sm text-surface-mute">Echte lavendel · Achterborder · 3 stuks · geplant 12 mei 2023</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="px-3 py-1.5 rounded-md text-sm font-medium bg-white border border-surface-border hover:bg-surface-alt clickable flex items-center gap-1.5">
+            <i data-lucide="heart" style="width:14px;height:14px;"></i> Favoriet
+          </button>
+          <button class="px-3 py-1.5 rounded-md text-sm font-medium bg-white border border-surface-border hover:bg-surface-alt clickable flex items-center gap-1.5">
+            <i data-lucide="share-2" style="width:14px;height:14px;"></i> Delen
+          </button>
+          <button class="px-3 py-1.5 rounded-md text-sm font-medium bg-moss-700 text-white hover:bg-moss-600 clickable flex items-center gap-1.5">
+            <i data-lucide="edit-3" style="width:14px;height:14px;"></i> Bewerken
+          </button>
+        </div>
+      </header>
+
+      <!-- Tabs -->
+      <div class="px-8 bg-white border-b border-surface-border flex items-center">
+        <div class="tab active"><i data-lucide="book" style="width:14px;height:14px;"></i> Overzicht</div>
+        <div class="tab"><i data-lucide="wrench" style="width:14px;height:14px;"></i> Onderhoud</div>
+        <div class="tab"><i data-lucide="book-open" style="width:14px;height:14px;"></i> Journal <span class="ml-1 text-xs bg-moss-100 text-moss-700 px-1.5 rounded">7</span></div>
+        <div class="tab"><i data-lucide="check-square" style="width:14px;height:14px;"></i> Taken</div>
+        <div class="tab"><i data-lucide="external-link" style="width:14px;height:14px;"></i> Bronnen</div>
+        <div class="tab"><i data-lucide="heart" style="width:14px;height:14px;"></i> Combinaties</div>
+        <div class="tab"><i data-lucide="alert-triangle" style="width:14px;height:14px;"></i> Problemen</div>
+      </div>
+
+      <div class="flex-1 grid grid-cols-12 gap-6 p-8">
+
+        <!-- Left: Photos -->
+        <div class="col-span-3">
+          <div class="aspect-square rounded-lg lavendel-thumb shadow-sm mb-3"></div>
+          <div class="grid grid-cols-3 gap-2">
+            <div class="aspect-square rounded lavendel-thumb opacity-90 cursor-pointer hover:opacity-100"></div>
+            <div class="aspect-square rounded lavendel-thumb opacity-70 cursor-pointer hover:opacity-100"></div>
+            <div class="aspect-square rounded bg-surface-alt cursor-pointer hover:bg-surface-border flex items-center justify-center text-surface-mute">
+              <i data-lucide="plus" style="width:16px;height:16px;"></i>
+            </div>
+          </div>
+          <button class="mt-4 w-full text-xs text-moss-700 font-medium hover:underline clickable py-2">
+            7 foto's in journal →
+          </button>
+
+          <!-- AI auto-fill banner -->
+          <div class="mt-6 p-3 bg-moss-100 rounded-lg flex gap-2">
+            <i data-lucide="sparkles" style="width:14px;height:14px;" class="text-moss-700 flex-shrink-0 mt-0.5"></i>
+            <div class="text-xs leading-snug">
+              <div class="font-medium text-moss-700 mb-0.5">Auto-ingevuld door AI</div>
+              <p class="text-moss-900 opacity-80">Klik op een veld om over te schrijven met je eigen ervaring.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Center: Properties -->
+        <div class="col-span-6 space-y-6">
+          <div>
+            <h4 class="text-sm font-semibold text-surface-mute uppercase tracking-wider mb-3">Samenvatting</h4>
+            <p class="text-sm leading-relaxed">Compacte vaste plant uit het Middellandse Zeegebied met sterk geurende, paarse aren tussen juni en augustus. Trekt bijen en vlinders aan. Verdraagt droogte zodra gevestigd. Hergroeit na voorjaarssnoei boven het houtige gedeelte.</p>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-sm divide-y divide-surface-border">
+            <div class="p-4 flex items-center justify-between">
+              <span class="flex items-center gap-3 text-sm">
+                <i data-lucide="calendar" style="width:16px;height:16px;" class="text-bloom-400"></i>
+                <span class="text-surface-mute w-32">Bloeiperiode</span>
+                <span>Juni – augustus</span>
+              </span>
+              <span class="source-chip">via RHS</span>
+            </div>
+            <div class="p-4 flex items-center justify-between">
+              <span class="flex items-center gap-3 text-sm">
+                <i data-lucide="ruler" style="width:16px;height:16px;" class="text-moss-500"></i>
+                <span class="text-surface-mute w-32">Hoogte × breedte</span>
+                <span>60 × 60 cm</span>
+              </span>
+              <span class="source-chip">via Trefle</span>
+            </div>
+            <div class="p-4 flex items-center justify-between">
+              <span class="flex items-center gap-3 text-sm">
+                <i data-lucide="sun" style="width:16px;height:16px;" class="text-amber-500"></i>
+                <span class="text-surface-mute w-32">Standplaats</span>
+                <span>Volle zon</span>
+              </span>
+              <span class="source-chip">via RHS</span>
+            </div>
+            <div class="p-4 flex items-center justify-between">
+              <span class="flex items-center gap-3 text-sm">
+                <i data-lucide="layers" style="width:16px;height:16px;" class="text-clay-700"></i>
+                <span class="text-surface-mute w-32">Grond</span>
+                <span>Goed doorlatend, kalkrijk · pH 6.5 – 8.0</span>
+              </span>
+              <span class="source-chip">via RHS</span>
+            </div>
+            <div class="p-4 flex items-center justify-between">
+              <span class="flex items-center gap-3 text-sm">
+                <i data-lucide="droplets" style="width:16px;height:16px;" class="text-sky-500"></i>
+                <span class="text-surface-mute w-32">Waterbehoefte</span>
+                <span>Laag</span>
+              </span>
+              <span class="source-chip">via RHS</span>
+            </div>
+            <div class="p-4 flex items-center justify-between">
+              <span class="flex items-center gap-3 text-sm">
+                <i data-lucide="snowflake" style="width:16px;height:16px;" class="text-sky-500"></i>
+                <span class="text-surface-mute w-32">Winterhardheid</span>
+                <span>USDA zone 5 (-28°C)</span>
+              </span>
+              <span class="source-chip">via USDA</span>
+            </div>
+            <div class="p-4 flex items-center justify-between">
+              <span class="flex items-center gap-3 text-sm">
+                <i data-lucide="scissors" style="width:16px;height:16px;" class="text-moss-700"></i>
+                <span class="text-surface-mute w-32">Snoeimoment</span>
+                <span>Na de bloei (augustus)</span>
+              </span>
+              <span class="source-chip review">via AI · te controleren</span>
+            </div>
+            <div class="p-4 flex items-center justify-between">
+              <span class="flex items-center gap-3 text-sm">
+                <i data-lucide="space" style="width:16px;height:16px;" class="text-moss-700"></i>
+                <span class="text-surface-mute w-32">Plantafstand</span>
+                <span>40 – 50 cm</span>
+              </span>
+              <span class="source-chip">via Trefle</span>
+            </div>
+            <div class="p-4 flex items-center justify-between">
+              <span class="flex items-center gap-3 text-sm">
+                <i data-lucide="leaf" style="width:16px;height:16px;" class="text-moss-500"></i>
+                <span class="text-surface-mute w-32">Type</span>
+                <span>Heester · halfwinterhard</span>
+              </span>
+              <span class="source-chip">via Trefle</span>
+            </div>
+            <div class="p-4 flex items-center justify-between">
+              <span class="flex items-center gap-3 text-sm">
+                <i data-lucide="bug" style="width:16px;height:16px;" class="text-bloom-400"></i>
+                <span class="text-surface-mute w-32">Bijzonderheden</span>
+                <span>Trekt bijen en vlinders aan, geurt heerlijk</span>
+              </span>
+              <span class="source-chip">via Velt</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Tuin context -->
+        <div class="col-span-3 space-y-4">
+          <div class="bg-white rounded-lg shadow-sm p-4">
+            <h4 class="text-sm font-semibold mb-3">In jouw tuin</h4>
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between">
+                <span class="text-surface-mute">Zone</span>
+                <span class="font-medium">Achterborder</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-surface-mute">Plantdatum</span>
+                <span class="font-medium">12 mei 2023</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-surface-mute">Aantal</span>
+                <span class="font-medium">3 stuks</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-surface-mute">Herkomst</span>
+                <span class="font-medium">Aveve · €18,50</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-surface-mute">Status</span>
+                <span class="flex items-center gap-1.5">
+                  <span class="status-dot bg-moss-500"></span>
+                  <span class="font-medium">Gezond</span>
+                </span>
+              </div>
+            </div>
+            <div class="mt-3 pt-3 border-t border-surface-border">
+              <div class="text-xs font-medium text-surface-mute mb-2">Eigen notities</div>
+              <p class="text-xs italic text-moss-900 leading-snug">Eén exemplaar wat trager dan de andere twee. Na droge zomer 2023 herstelden alle drie.</p>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-sm p-4">
+            <h4 class="text-sm font-semibold mb-3">Match-score Achterborder</h4>
+            <div class="text-3xl font-display font-bold text-moss-700 mb-2">94<span class="text-base text-surface-mute">/100</span></div>
+            <div class="space-y-1.5 text-xs">
+              <div class="flex justify-between"><span class="text-surface-mute">Bodem</span><span class="text-moss-700 font-medium">✓ Leem ideaal</span></div>
+              <div class="flex justify-between"><span class="text-surface-mute">Zon</span><span class="text-moss-700 font-medium">✓ Vol zon match</span></div>
+              <div class="flex justify-between"><span class="text-surface-mute">pH</span><span class="text-moss-700 font-medium">✓ 6.4 in bereik</span></div>
+              <div class="flex justify-between"><span class="text-surface-mute">Hardiness</span><span class="text-moss-700 font-medium">✓ Zone 8b</span></div>
+              <div class="flex justify-between"><span class="text-surface-mute">Bloei-gap</span><span class="text-amber-700 font-medium">~ overlap</span></div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-sm p-4">
+            <h4 class="text-sm font-semibold mb-3">Bronnen</h4>
+            <ul class="space-y-2 text-xs">
+              <li class="flex items-center justify-between">
+                <span class="flex items-center gap-2"><i data-lucide="external-link" style="width:12px;height:12px;" class="text-surface-mute"></i> RHS Plants</span>
+                <span class="text-surface-mute">5 velden</span>
+              </li>
+              <li class="flex items-center justify-between">
+                <span class="flex items-center gap-2"><i data-lucide="external-link" style="width:12px;height:12px;" class="text-surface-mute"></i> Trefle</span>
+                <span class="text-surface-mute">3 velden</span>
+              </li>
+              <li class="flex items-center justify-between">
+                <span class="flex items-center gap-2"><i data-lucide="external-link" style="width:12px;height:12px;" class="text-surface-mute"></i> USDA Plants DB</span>
+                <span class="text-surface-mute">1 veld</span>
+              </li>
+              <li class="flex items-center justify-between">
+                <span class="flex items-center gap-2"><i data-lucide="external-link" style="width:12px;height:12px;" class="text-surface-mute"></i> Velt.be</span>
+                <span class="text-surface-mute">1 veld</span>
+              </li>
+              <li class="flex items-center justify-between text-amber-700">
+                <span class="flex items-center gap-2"><i data-lucide="sparkles" style="width:12px;height:12px;"></i> AI-knowledge</span>
+                <span>1 veld</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 grid grid-cols-3 gap-4 text-sm">
+    <div class="p-3 bg-surface-alt rounded-md">
+      <div class="font-semibold mb-1">Bron per veld</div>
+      <p class="text-surface-mute leading-snug">Elk veld heeft een chip rechts ("via RHS", "via Trefle", "via USDA"). Eén veld is "via AI · te controleren" in amber — signaal aan de gebruiker dat dit het minst betrouwbare is.</p>
+    </div>
+    <div class="p-3 bg-surface-alt rounded-md">
+      <div class="font-semibold mb-1">Tuin-context altijd zichtbaar</div>
+      <p class="text-surface-mute leading-snug">Rechterkolom toont jouw exemplaar (datum, herkomst, prijs, status, notities) náást de algemene plantkennis. Verwarring met andere lavendels uitgesloten.</p>
+    </div>
+    <div class="p-3 bg-surface-alt rounded-md">
+      <div class="font-semibold mb-1">Match-score retrospectief</div>
+      <p class="text-surface-mute leading-snug">Ook na planten blijft de score zichtbaar. Bij verslechtering (bv. pH gedaald onder bereik) verandert hij — geeft een vroeg signaal of de plant op de juiste plek staat.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SCREEN 4: AI TUIN ARCHITECT
+═══════════════════════════════════════════════════════════════════ -->
+<section id="architect" class="anchor mb-20">
+  <div class="mb-4 flex items-baseline gap-4">
+    <h2 class="text-2xl font-display font-bold">AI Tuin Architect</h2>
+    <span class="text-sm text-surface-mute">Beschrijf je wensen, krijg drie ontwerpvoorstellen — binnen Zone Designer</span>
+  </div>
+
+  <div class="screen-frame flex" style="height: 820px;">
+    <div class="mini-rail">
+      <div class="mini-rail-item"><i data-lucide="layout-dashboard"></i></div>
+      <div class="mini-rail-item"><i data-lucide="map"></i></div>
+      <div class="mini-rail-item active"><i data-lucide="grid-3x3"></i></div>
+      <div class="mini-rail-item"><i data-lucide="leaf"></i></div>
+      <div class="mini-rail-item"><i data-lucide="compass"></i></div>
+      <div class="mini-rail-item"><i data-lucide="check-square"></i></div>
+      <div class="mini-rail-item"><i data-lucide="calendar"></i></div>
+      <div class="mini-rail-item"><i data-lucide="book-open"></i></div>
+      <div class="mini-rail-item"><i data-lucide="sparkles"></i></div>
+    </div>
+
+    <div class="flex-1 flex flex-col min-w-0">
+      <header class="px-6 py-4 border-b border-surface-border flex items-center justify-between bg-white">
+        <div class="flex items-center gap-4">
+          <button class="w-8 h-8 rounded-md hover:bg-surface-alt flex items-center justify-center clickable">
+            <i data-lucide="arrow-left" style="width:18px;height:18px;"></i>
+          </button>
+          <div>
+            <h3 class="text-xl font-display font-bold leading-tight">Achterborder</h3>
+            <p class="text-xs text-surface-mute">145 m² · Border · AI Tuin Architect-modus</p>
+          </div>
+        </div>
+        <button class="px-3 py-1.5 rounded-md text-sm font-medium bg-moss-700 text-white hover:bg-moss-600 clickable flex items-center gap-1.5">
+          <i data-lucide="check" style="width:14px;height:14px;"></i> Pas toe op zone
+        </button>
+      </header>
+
+      <div class="flex-1 grid grid-cols-12 gap-6 p-6 bg-surface-bg">
+        <!-- Center: proposal canvas -->
+        <div class="col-span-7 bg-white rounded-lg shadow-sm flex flex-col">
+          <div class="px-5 py-3 border-b border-surface-border flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <button class="w-7 h-7 rounded-full bg-surface-alt hover:bg-surface-border flex items-center justify-center clickable">
+                <i data-lucide="chevron-left" style="width:14px;height:14px;"></i>
+              </button>
+              <div>
+                <div class="text-sm font-semibold">Voorstel 2 van 3</div>
+                <div class="text-xs text-surface-mute">"Bijenfavoriet, lange bloei juli–oktober"</div>
+              </div>
+              <button class="w-7 h-7 rounded-full bg-surface-alt hover:bg-surface-border flex items-center justify-center clickable">
+                <i data-lucide="chevron-right" style="width:14px;height:14px;"></i>
+              </button>
+            </div>
+            <div class="flex items-center gap-1.5 text-xs text-surface-mute">
+              <i data-lucide="loader" style="width:12px;height:12px;"></i>
+              Gegenereerd 2 min geleden
+            </div>
+          </div>
+
+          <!-- Mini canvas with proposed plants -->
+          <div class="flex-1 relative bg-gradient-to-br from-moss-100 to-moss-200 m-4 rounded-lg overflow-hidden">
+            <svg viewBox="0 0 800 500" class="w-full h-full">
+              <!-- Border outline -->
+              <rect x="4" y="4" width="792" height="492" rx="8" fill="none" stroke="#7FA078" stroke-width="2" stroke-dasharray="6 4" opacity="0.6" />
+              <!-- Plants: clustered, ordered front-to-back -->
+              <g opacity="0.82">
+                <!-- Front row: lavender, nepeta -->
+                <circle cx="80" cy="420" r="30" fill="#8F6BB8" stroke="#1F3026" stroke-width="1.5" /><text x="80" y="424" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">La</text>
+                <circle cx="160" cy="420" r="30" fill="#8F6BB8" stroke="#1F3026" stroke-width="1.5" /><text x="160" y="424" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">La</text>
+                <circle cx="240" cy="420" r="30" fill="#8F6BB8" stroke="#1F3026" stroke-width="1.5" /><text x="240" y="424" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">La</text>
+                <circle cx="340" cy="420" r="30" fill="#7B9AC8" stroke="#1F3026" stroke-width="1.5" /><text x="340" y="424" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">Ne</text>
+                <circle cx="430" cy="420" r="30" fill="#7B9AC8" stroke="#1F3026" stroke-width="1.5" /><text x="430" y="424" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">Ne</text>
+                <circle cx="520" cy="420" r="40" fill="#6B7FC4" stroke="#1F3026" stroke-width="1.5" /><text x="520" y="424" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">Ge</text>
+                <circle cx="610" cy="420" r="40" fill="#6B7FC4" stroke="#1F3026" stroke-width="1.5" /><text x="610" y="424" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">Ge</text>
+                <circle cx="700" cy="420" r="30" fill="#8F6BB8" stroke="#1F3026" stroke-width="1.5" /><text x="700" y="424" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">La</text>
+
+                <!-- Mid row: salvia, echinacea -->
+                <circle cx="100" cy="310" r="22" fill="#5A3E83" stroke="#1F3026" stroke-width="1.5" /><text x="100" y="314" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="white">Sa</text>
+                <circle cx="180" cy="310" r="22" fill="#5A3E83" stroke="#1F3026" stroke-width="1.5" /><text x="180" y="314" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="white">Sa</text>
+                <circle cx="260" cy="310" r="22" fill="#5A3E83" stroke="#1F3026" stroke-width="1.5" /><text x="260" y="314" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="white">Sa</text>
+                <circle cx="350" cy="310" r="28" fill="#D27FAA" stroke="#1F3026" stroke-width="1.5" /><text x="350" y="314" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">Ec</text>
+                <circle cx="430" cy="310" r="28" fill="#D27FAA" stroke="#1F3026" stroke-width="1.5" /><text x="430" y="314" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">Ec</text>
+                <circle cx="510" cy="310" r="28" fill="#D27FAA" stroke="#1F3026" stroke-width="1.5" /><text x="510" y="314" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">Ec</text>
+                <circle cx="600" cy="310" r="25" fill="#E2A02C" stroke="#1F3026" stroke-width="1.5" /><text x="600" y="314" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">Ac</text>
+                <circle cx="680" cy="310" r="25" fill="#E2A02C" stroke="#1F3026" stroke-width="1.5" /><text x="680" y="314" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">Ac</text>
+
+                <!-- Back row: tall verbena, rudbeckia, allium -->
+                <circle cx="150" cy="180" r="25" fill="#B689D4" stroke="#1F3026" stroke-width="1.5" /><text x="150" y="184" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">Vb</text>
+                <circle cx="250" cy="180" r="25" fill="#B689D4" stroke="#1F3026" stroke-width="1.5" /><text x="250" y="184" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">Vb</text>
+                <circle cx="400" cy="180" r="25" fill="#E8B936" stroke="#1F3026" stroke-width="1.5" /><text x="400" y="184" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">Ru</text>
+                <circle cx="480" cy="180" r="25" fill="#E8B936" stroke="#1F3026" stroke-width="1.5" /><text x="480" y="184" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">Ru</text>
+                <circle cx="560" cy="180" r="25" fill="#E8B936" stroke="#1F3026" stroke-width="1.5" /><text x="560" y="184" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">Ru</text>
+                <circle cx="640" cy="180" r="15" fill="#9376B8" stroke="#1F3026" stroke-width="1.5" /><text x="640" y="184" text-anchor="middle" font-size="9" font-weight="600" font-family="Inter" fill="white">Al</text>
+                <circle cx="690" cy="180" r="15" fill="#9376B8" stroke="#1F3026" stroke-width="1.5" /><text x="690" y="184" text-anchor="middle" font-size="9" font-weight="600" font-family="Inter" fill="white">Al</text>
+                <!-- Stipa scattered -->
+                <circle cx="300" cy="240" r="22" fill="#D4C896" stroke="#1F3026" stroke-width="1.5" opacity="0.85" /><text x="300" y="244" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">St</text>
+                <circle cx="600" cy="240" r="22" fill="#D4C896" stroke="#1F3026" stroke-width="1.5" opacity="0.85" /><text x="600" y="244" text-anchor="middle" font-size="10" font-weight="600" font-family="Inter" fill="#1F3026">St</text>
+              </g>
+            </svg>
+            <div class="absolute bottom-3 left-3 bg-white/95 rounded-md shadow-sm px-3 py-1.5 text-xs flex items-center gap-3">
+              <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-moss-500"></span> Geen overlap</span>
+              <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Lichte (2)</span>
+              <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rust-500"></span> Te dicht (0)</span>
+            </div>
+          </div>
+
+          <!-- Bottom stats strip -->
+          <div class="px-5 py-3 border-t border-surface-border grid grid-cols-5 gap-3 text-center">
+            <div>
+              <div class="font-display font-bold text-lg text-moss-700">19</div>
+              <div class="text-xs text-surface-mute">Planten</div>
+            </div>
+            <div>
+              <div class="font-display font-bold text-lg text-moss-700">8</div>
+              <div class="text-xs text-surface-mute">Soorten</div>
+            </div>
+            <div>
+              <div class="font-display font-bold text-lg text-moss-700">mei–okt</div>
+              <div class="text-xs text-surface-mute">Bloei</div>
+            </div>
+            <div>
+              <div class="font-display font-bold text-lg text-amber-700">Medium</div>
+              <div class="text-xs text-surface-mute">Onderhoud</div>
+            </div>
+            <div>
+              <div class="font-display font-bold text-lg text-moss-700">€185</div>
+              <div class="text-xs text-surface-mute">Geschat</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Architect panel -->
+        <div class="col-span-5 space-y-4 overflow-y-auto">
+          <!-- Wish input -->
+          <div class="bg-white rounded-lg shadow-sm p-5">
+            <div class="flex items-center gap-2 mb-3">
+              <i data-lucide="sparkles" style="width:16px;height:16px;" class="text-moss-700"></i>
+              <h4 class="font-semibold">Jouw wens</h4>
+            </div>
+            <p class="text-sm leading-relaxed bg-surface-alt rounded-md p-3 italic">
+              "Ik wil veel bijen aantrekken, weinig onderhoud, paarse en gele tinten, bloei vooral juli tot oktober. Houd het rustig — geen vlammende kleuren."
+            </p>
+            <div class="flex items-center justify-between mt-3">
+              <button class="text-xs text-moss-700 font-medium hover:underline">Wens aanpassen</button>
+              <button class="text-xs text-moss-700 font-medium hover:underline flex items-center gap-1">
+                <i data-lucide="refresh-cw" style="width:11px;height:11px;"></i> Genereer opnieuw
+              </button>
+            </div>
+          </div>
+
+          <!-- Plantenlijst van voorstel -->
+          <div class="bg-white rounded-lg shadow-sm p-5">
+            <h4 class="font-semibold mb-3 flex items-center justify-between">
+              <span>Planten in dit voorstel</span>
+              <span class="text-xs text-surface-mute font-normal">19 stuks · 8 soorten</span>
+            </h4>
+            <div class="space-y-2 text-sm">
+              <div class="flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full" style="background:#8F6BB8"></span>
+                <span class="flex-1 scientific">Lavandula angustifolia</span>
+                <span class="text-surface-mute">4×</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full" style="background:#5A3E83"></span>
+                <span class="flex-1 scientific">Salvia 'Caradonna'</span>
+                <span class="text-surface-mute">3×</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full" style="background:#D27FAA"></span>
+                <span class="flex-1 scientific">Echinacea purpurea</span>
+                <span class="text-surface-mute">3×</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full" style="background:#E2A02C"></span>
+                <span class="flex-1 scientific">Achillea 'Coronation'</span>
+                <span class="text-surface-mute">2×</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full" style="background:#E8B936"></span>
+                <span class="flex-1 scientific">Rudbeckia 'Goldsturm'</span>
+                <span class="text-surface-mute">3×</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full" style="background:#7B9AC8"></span>
+                <span class="flex-1 scientific">Nepeta 'Walker's Low'</span>
+                <span class="text-surface-mute">2×</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full" style="background:#B689D4"></span>
+                <span class="flex-1 scientific">Verbena bonariensis</span>
+                <span class="text-surface-mute">2×</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="w-3 h-3 rounded-full" style="background:#9376B8"></span>
+                <span class="flex-1 scientific">Allium 'Globemaster'</span>
+                <span class="text-surface-mute">2×</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Companion check -->
+          <div class="bg-white rounded-lg shadow-sm p-5">
+            <h4 class="font-semibold mb-3 flex items-center gap-2">
+              <i data-lucide="heart" style="width:16px;height:16px;" class="text-moss-700"></i>
+              Companion check
+            </h4>
+            <div class="space-y-2">
+              <div class="p-3 bg-amber-100 rounded-md flex items-start gap-2">
+                <i data-lucide="alert-triangle" style="width:14px;height:14px;" class="text-amber-700 mt-0.5"></i>
+                <div class="text-xs">
+                  <div class="font-medium text-amber-700">2 lichte waarschuwingen</div>
+                  <p class="text-amber-700 opacity-80 mt-0.5">Achillea staat dichtbij Geranium — Achillea is mild allelopathisch.</p>
+                </div>
+              </div>
+              <div class="p-3 bg-moss-100 rounded-md flex items-start gap-2">
+                <i data-lucide="check-circle-2" style="width:14px;height:14px;" class="text-moss-700 mt-0.5"></i>
+                <div class="text-xs">
+                  <div class="font-medium text-moss-700">12 goede combinaties</div>
+                  <p class="text-moss-900 opacity-80 mt-0.5">Lavendel + Salvia + Echinacea = klassiek bijen-trio.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="grid grid-cols-3 gap-2">
+            <button class="bg-white border border-surface-border hover:bg-surface-alt rounded-md px-3 py-2 text-xs font-medium clickable flex items-center justify-center gap-1.5">
+              <i data-lucide="list" style="width:12px;height:12px;"></i> Lijst
+            </button>
+            <button class="bg-white border border-surface-border hover:bg-surface-alt rounded-md px-3 py-2 text-xs font-medium clickable flex items-center justify-center gap-1.5">
+              <i data-lucide="calendar" style="width:12px;height:12px;"></i> Bloei
+            </button>
+            <button class="bg-white border border-surface-border hover:bg-surface-alt rounded-md px-3 py-2 text-xs font-medium clickable flex items-center justify-center gap-1.5">
+              <i data-lucide="euro" style="width:12px;height:12px;"></i> Kost
+            </button>
+          </div>
+
+          <!-- AI disclaimer -->
+          <div class="bg-surface-alt rounded-md p-3 flex gap-2 text-xs leading-snug">
+            <i data-lucide="info" style="width:14px;height:14px;" class="text-surface-mute flex-shrink-0 mt-0.5"></i>
+            <span class="text-surface-mute">AI-suggestie. Controleer altijd of planten geschikt zijn voor jouw exacte omstandigheden — lokale microklimaat-variaties tellen.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 grid grid-cols-3 gap-4 text-sm">
+    <div class="p-3 bg-surface-alt rounded-md">
+      <div class="font-semibold mb-1">Drie voorstellen, vergelijkbaar</div>
+      <p class="text-surface-mute leading-snug">Paginering links toont "Voorstel 2 van 3". Andere voorstellen variëren in aanpak — voorstel 1 misschien meer rustig/wit, voorstel 3 met meer accentkleur. Gebruiker kiest.</p>
+    </div>
+    <div class="p-3 bg-surface-alt rounded-md">
+      <div class="font-semibold mb-1">Companion check niet weggemoffeld</div>
+      <p class="text-surface-mute leading-snug">Het AI-voorstel toont eerlijk dat er 2 waarschuwingen zijn — geen perfect resultaat verkocht. Vertrouwen verdien je door problemen te durven benoemen.</p>
+    </div>
+    <div class="p-3 bg-surface-alt rounded-md">
+      <div class="font-semibold mb-1">Disclaimer is geen pop-up</div>
+      <p class="text-surface-mute leading-snug">"Controleer altijd of planten geschikt zijn..." staat onderaan elk voorstel. Niet als modal dat weggeklikt moet worden, maar als rustige permanente herinnering.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SCREEN 5: BLOEIKALENDER
+═══════════════════════════════════════════════════════════════════ -->
+<section id="bloeikalender" class="anchor mb-20">
+  <div class="mb-4 flex items-baseline gap-4">
+    <h2 class="text-2xl font-display font-bold">Bloeikalender</h2>
+    <span class="text-sm text-surface-mute">Gantt over het hele jaar — toont gaten in bloei-spreiding direct</span>
+  </div>
+
+  <div class="screen-frame flex" style="height: 820px;">
+    <div class="mini-rail">
+      <div class="mini-rail-item"><i data-lucide="layout-dashboard"></i></div>
+      <div class="mini-rail-item"><i data-lucide="map"></i></div>
+      <div class="mini-rail-item"><i data-lucide="grid-3x3"></i></div>
+      <div class="mini-rail-item"><i data-lucide="leaf"></i></div>
+      <div class="mini-rail-item"><i data-lucide="compass"></i></div>
+      <div class="mini-rail-item"><i data-lucide="check-square"></i></div>
+      <div class="mini-rail-item active"><i data-lucide="calendar"></i></div>
+      <div class="mini-rail-item"><i data-lucide="book-open"></i></div>
+      <div class="mini-rail-item"><i data-lucide="sparkles"></i></div>
+    </div>
+
+    <div class="flex-1 flex flex-col min-w-0">
+      <header class="px-6 py-4 border-b border-surface-border bg-white">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="text-xl font-display font-bold leading-tight">Bloeikalender 2026</h3>
+            <p class="text-xs text-surface-mute">Tuin De Eik · 128 planten · 6 zones</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="px-3 py-1.5 rounded-md text-sm bg-white border border-surface-border hover:bg-surface-alt clickable flex items-center gap-1.5">
+              <i data-lucide="download" style="width:14px;height:14px;"></i> Export
+            </button>
+            <button class="px-3 py-1.5 rounded-md text-sm bg-moss-700 text-white hover:bg-moss-600 clickable flex items-center gap-1.5">
+              <i data-lucide="sparkles" style="width:14px;height:14px;"></i> Vul gaten op
+            </button>
+          </div>
+        </div>
+        <!-- Filter chips -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-surface-mute font-medium mr-1">Filter:</span>
+          <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-moss-700 text-white">Alle zones</span>
+          <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-white border border-surface-border clickable">Achterborder</span>
+          <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-white border border-surface-border clickable">Moestuin</span>
+          <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-white border border-surface-border clickable">Voortuin</span>
+          <span class="text-surface-border">·</span>
+          <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-white border border-surface-border clickable">Alleen bijenplanten</span>
+          <span class="ml-auto text-xs text-surface-mute">Sortering: <b class="text-moss-700">Bloeibegin</b></span>
+        </div>
+      </header>
+
+      <div class="flex-1 overflow-y-auto p-6 bg-surface-bg">
+
+        <!-- Coverage summary -->
+        <div class="grid grid-cols-4 gap-3 mb-5">
+          <div class="bg-white rounded-md p-3 shadow-sm">
+            <div class="text-xs text-surface-mute mb-1">Maanden met bloei</div>
+            <div class="font-display font-bold text-2xl text-moss-700">10 <span class="text-sm text-surface-mute">/12</span></div>
+          </div>
+          <div class="bg-white rounded-md p-3 shadow-sm">
+            <div class="text-xs text-surface-mute mb-1">Gat-maanden</div>
+            <div class="font-display font-bold text-2xl text-amber-700">jan, feb</div>
+          </div>
+          <div class="bg-white rounded-md p-3 shadow-sm">
+            <div class="text-xs text-surface-mute mb-1">Piek-maand</div>
+            <div class="font-display font-bold text-2xl text-bloom-400">juli</div>
+          </div>
+          <div class="bg-white rounded-md p-3 shadow-sm">
+            <div class="text-xs text-surface-mute mb-1">Spreiding-score</div>
+            <div class="font-display font-bold text-2xl text-moss-700">83<span class="text-sm text-surface-mute">/100</span></div>
+          </div>
+        </div>
+
+        <!-- Gantt -->
+        <div class="bg-white rounded-lg shadow-sm p-5">
+          <!-- Month header -->
+          <div class="grid mb-3" style="grid-template-columns: 220px repeat(12, 1fr); gap: 4px;">
+            <div></div>
+            <div class="text-xs font-semibold text-surface-mute text-center">JAN</div>
+            <div class="text-xs font-semibold text-surface-mute text-center">FEB</div>
+            <div class="text-xs font-semibold text-amber-700 text-center bg-amber-100 rounded px-1">MRT</div>
+            <div class="text-xs font-semibold text-amber-700 text-center bg-amber-100 rounded px-1">APR</div>
+            <div class="text-xs font-semibold text-amber-700 text-center bg-amber-100 rounded px-1">MEI</div>
+            <div class="text-xs font-semibold text-moss-700 text-center bg-moss-100 rounded px-1">JUN</div>
+            <div class="text-xs font-semibold text-moss-700 text-center bg-moss-100 rounded px-1 ring-1 ring-moss-700">JUL</div>
+            <div class="text-xs font-semibold text-moss-700 text-center bg-moss-100 rounded px-1">AUG</div>
+            <div class="text-xs font-semibold text-moss-700 text-center bg-moss-100 rounded px-1">SEP</div>
+            <div class="text-xs font-semibold text-amber-700 text-center bg-amber-100 rounded px-1">OKT</div>
+            <div class="text-xs font-semibold text-surface-mute text-center">NOV</div>
+            <div class="text-xs font-semibold text-surface-mute text-center">DEC</div>
+          </div>
+
+          <!-- Plant rows -->
+          <div class="space-y-1.5">
+            <!-- Galanthus -->
+            <div class="grid items-center" style="grid-template-columns: 220px repeat(12, 1fr); gap: 4px;">
+              <div class="flex items-center gap-2 text-sm pr-2">
+                <span class="w-3 h-3 rounded-full" style="background:#FFFFFF;border:1.5px solid #BCB5A6"></span>
+                <span class="flex-1 min-w-0 truncate"><span class="scientific">Galanthus nivalis</span></span>
+                <span class="text-xs text-surface-mute">Voor</span>
+              </div>
+              <div class="gantt-cell" style="background:#FFFFFF;border:1.5px solid #BCB5A6"></div>
+              <div class="gantt-cell" style="background:#FFFFFF;border:1.5px solid #BCB5A6"></div>
+              <div class="gantt-cell" style="background:#FFFFFF;border:1.5px solid #BCB5A6;opacity:0.5"></div>
+              <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+            </div>
+            <!-- Crocus -->
+            <div class="grid items-center" style="grid-template-columns: 220px repeat(12, 1fr); gap: 4px;">
+              <div class="flex items-center gap-2 text-sm pr-2">
+                <span class="w-3 h-3 rounded-full" style="background:#9376B8"></span>
+                <span class="flex-1 min-w-0 truncate"><span class="scientific">Crocus tommasinianus</span></span>
+                <span class="text-xs text-surface-mute">Voor</span>
+              </div>
+              <div></div>
+              <div class="gantt-cell" style="background:#9376B8"></div>
+              <div class="gantt-cell" style="background:#9376B8"></div>
+              <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+            </div>
+            <!-- Allium globemaster -->
+            <div class="grid items-center" style="grid-template-columns: 220px repeat(12, 1fr); gap: 4px;">
+              <div class="flex items-center gap-2 text-sm pr-2">
+                <span class="w-3 h-3 rounded-full" style="background:#9376B8"></span>
+                <span class="flex-1 min-w-0 truncate"><span class="scientific">Allium 'Globemaster'</span></span>
+                <span class="text-xs text-surface-mute">Acht</span>
+              </div>
+              <div></div><div></div><div></div><div></div>
+              <div class="gantt-cell" style="background:#9376B8"></div>
+              <div class="gantt-cell" style="background:#9376B8"></div>
+              <div></div><div></div><div></div><div></div><div></div><div></div>
+            </div>
+            <!-- Salvia -->
+            <div class="grid items-center" style="grid-template-columns: 220px repeat(12, 1fr); gap: 4px;">
+              <div class="flex items-center gap-2 text-sm pr-2">
+                <span class="w-3 h-3 rounded-full" style="background:#5A3E83"></span>
+                <span class="flex-1 min-w-0 truncate"><span class="scientific">Salvia 'Caradonna'</span></span>
+                <span class="text-xs text-surface-mute">Acht</span>
+              </div>
+              <div></div><div></div><div></div><div></div>
+              <div class="gantt-cell" style="background:#5A3E83"></div>
+              <div class="gantt-cell" style="background:#5A3E83"></div>
+              <div class="gantt-cell" style="background:#5A3E83"></div>
+              <div class="gantt-cell" style="background:#5A3E83"></div>
+              <div class="gantt-cell" style="background:#5A3E83;opacity:0.6"></div>
+              <div></div><div></div><div></div>
+            </div>
+            <!-- Nepeta -->
+            <div class="grid items-center" style="grid-template-columns: 220px repeat(12, 1fr); gap: 4px;">
+              <div class="flex items-center gap-2 text-sm pr-2">
+                <span class="w-3 h-3 rounded-full" style="background:#7B9AC8"></span>
+                <span class="flex-1 min-w-0 truncate"><span class="scientific">Nepeta faassenii</span></span>
+                <span class="text-xs text-surface-mute">Acht</span>
+              </div>
+              <div></div><div></div><div></div><div></div>
+              <div class="gantt-cell" style="background:#7B9AC8"></div>
+              <div class="gantt-cell" style="background:#7B9AC8"></div>
+              <div class="gantt-cell" style="background:#7B9AC8"></div>
+              <div class="gantt-cell" style="background:#7B9AC8"></div>
+              <div></div><div></div><div></div><div></div>
+            </div>
+            <!-- Geranium -->
+            <div class="grid items-center" style="grid-template-columns: 220px repeat(12, 1fr); gap: 4px;">
+              <div class="flex items-center gap-2 text-sm pr-2">
+                <span class="w-3 h-3 rounded-full" style="background:#6B7FC4"></span>
+                <span class="flex-1 min-w-0 truncate"><span class="scientific">Geranium 'Rozanne'</span></span>
+                <span class="text-xs text-surface-mute">Acht</span>
+              </div>
+              <div></div><div></div><div></div><div></div><div></div>
+              <div class="gantt-cell" style="background:#6B7FC4"></div>
+              <div class="gantt-cell" style="background:#6B7FC4"></div>
+              <div class="gantt-cell" style="background:#6B7FC4"></div>
+              <div class="gantt-cell" style="background:#6B7FC4"></div>
+              <div class="gantt-cell" style="background:#6B7FC4"></div>
+              <div></div><div></div>
+            </div>
+            <!-- Lavendel -->
+            <div class="grid items-center" style="grid-template-columns: 220px repeat(12, 1fr); gap: 4px;">
+              <div class="flex items-center gap-2 text-sm pr-2">
+                <span class="w-3 h-3 rounded-full" style="background:#8F6BB8"></span>
+                <span class="flex-1 min-w-0 truncate"><span class="scientific">Lavandula angustifolia</span></span>
+                <span class="text-xs text-surface-mute">Acht</span>
+              </div>
+              <div></div><div></div><div></div><div></div><div></div>
+              <div class="gantt-cell" style="background:#8F6BB8"></div>
+              <div class="gantt-cell" style="background:#8F6BB8"></div>
+              <div class="gantt-cell" style="background:#8F6BB8"></div>
+              <div></div><div></div><div></div><div></div>
+            </div>
+            <!-- Achillea -->
+            <div class="grid items-center" style="grid-template-columns: 220px repeat(12, 1fr); gap: 4px;">
+              <div class="flex items-center gap-2 text-sm pr-2">
+                <span class="w-3 h-3 rounded-full" style="background:#E2A02C"></span>
+                <span class="flex-1 min-w-0 truncate"><span class="scientific">Achillea millefolium</span></span>
+                <span class="text-xs text-surface-mute">Acht</span>
+              </div>
+              <div></div><div></div><div></div><div></div><div></div>
+              <div class="gantt-cell" style="background:#E2A02C"></div>
+              <div class="gantt-cell" style="background:#E2A02C"></div>
+              <div class="gantt-cell" style="background:#E2A02C"></div>
+              <div class="gantt-cell" style="background:#E2A02C"></div>
+              <div></div><div></div><div></div>
+            </div>
+            <!-- Echinacea -->
+            <div class="grid items-center" style="grid-template-columns: 220px repeat(12, 1fr); gap: 4px;">
+              <div class="flex items-center gap-2 text-sm pr-2">
+                <span class="w-3 h-3 rounded-full" style="background:#D27FAA"></span>
+                <span class="flex-1 min-w-0 truncate"><span class="scientific">Echinacea purpurea</span></span>
+                <span class="text-xs text-surface-mute">Acht</span>
+              </div>
+              <div></div><div></div><div></div><div></div><div></div><div></div>
+              <div class="gantt-cell" style="background:#D27FAA"></div>
+              <div class="gantt-cell" style="background:#D27FAA"></div>
+              <div class="gantt-cell" style="background:#D27FAA"></div>
+              <div></div><div></div><div></div>
+            </div>
+            <!-- Rudbeckia -->
+            <div class="grid items-center" style="grid-template-columns: 220px repeat(12, 1fr); gap: 4px;">
+              <div class="flex items-center gap-2 text-sm pr-2">
+                <span class="w-3 h-3 rounded-full" style="background:#E8B936"></span>
+                <span class="flex-1 min-w-0 truncate"><span class="scientific">Rudbeckia fulgida</span></span>
+                <span class="text-xs text-surface-mute">Acht</span>
+              </div>
+              <div></div><div></div><div></div><div></div><div></div><div></div>
+              <div class="gantt-cell" style="background:#E8B936"></div>
+              <div class="gantt-cell" style="background:#E8B936"></div>
+              <div class="gantt-cell" style="background:#E8B936"></div>
+              <div class="gantt-cell" style="background:#E8B936"></div>
+              <div></div><div></div>
+            </div>
+            <!-- Verbena bonariensis -->
+            <div class="grid items-center" style="grid-template-columns: 220px repeat(12, 1fr); gap: 4px;">
+              <div class="flex items-center gap-2 text-sm pr-2">
+                <span class="w-3 h-3 rounded-full" style="background:#B689D4"></span>
+                <span class="flex-1 min-w-0 truncate"><span class="scientific">Verbena bonariensis</span></span>
+                <span class="text-xs text-surface-mute">Acht</span>
+              </div>
+              <div></div><div></div><div></div><div></div><div></div><div></div>
+              <div class="gantt-cell" style="background:#B689D4"></div>
+              <div class="gantt-cell" style="background:#B689D4"></div>
+              <div class="gantt-cell" style="background:#B689D4"></div>
+              <div class="gantt-cell" style="background:#B689D4"></div>
+              <div></div><div></div>
+            </div>
+            <!-- Anemone japonica -->
+            <div class="grid items-center" style="grid-template-columns: 220px repeat(12, 1fr); gap: 4px;">
+              <div class="flex items-center gap-2 text-sm pr-2">
+                <span class="w-3 h-3 rounded-full" style="background:#E89BA5"></span>
+                <span class="flex-1 min-w-0 truncate"><span class="scientific">Anemone × hybrida</span></span>
+                <span class="text-xs text-surface-mute">Voor</span>
+              </div>
+              <div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+              <div class="gantt-cell" style="background:#E89BA5"></div>
+              <div class="gantt-cell" style="background:#E89BA5"></div>
+              <div class="gantt-cell" style="background:#E89BA5"></div>
+              <div></div><div></div>
+            </div>
+            <!-- Aster -->
+            <div class="grid items-center" style="grid-template-columns: 220px repeat(12, 1fr); gap: 4px;">
+              <div class="flex items-center gap-2 text-sm pr-2">
+                <span class="w-3 h-3 rounded-full" style="background:#7B9AC8"></span>
+                <span class="flex-1 min-w-0 truncate"><span class="scientific">Symphyotrichum n-a.</span></span>
+                <span class="text-xs text-surface-mute">Voor</span>
+              </div>
+              <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+              <div class="gantt-cell" style="background:#7B9AC8"></div>
+              <div class="gantt-cell" style="background:#7B9AC8"></div>
+              <div class="gantt-cell" style="background:#7B9AC8"></div>
+              <div></div>
+            </div>
+
+            <!-- Gap suggestion -->
+            <div class="mt-3 grid items-center bg-amber-100/50 rounded-md py-2" style="grid-template-columns: 220px repeat(12, 1fr); gap: 4px;">
+              <div class="flex items-center gap-2 text-xs pr-2 pl-2">
+                <i data-lucide="sparkles" style="width:12px;height:12px;" class="text-amber-700"></i>
+                <span class="text-amber-700 font-medium">Voorstel: Helleborus</span>
+              </div>
+              <div class="gantt-cell border border-dashed border-amber-500" style="background:rgba(216,146,22,0.2)"></div>
+              <div class="gantt-cell border border-dashed border-amber-500" style="background:rgba(216,146,22,0.2)"></div>
+              <div class="gantt-cell border border-dashed border-amber-500" style="background:rgba(216,146,22,0.2)"></div>
+              <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 grid grid-cols-3 gap-4 text-sm">
+    <div class="p-3 bg-surface-alt rounded-md">
+      <div class="font-semibold mb-1">Maand-headers gekleurd op coverage</div>
+      <p class="text-surface-mute leading-snug">Mosgroen voor zomer-maanden (volle bloei), amber voor schouder-maanden (beperkt), grijs voor gat-maanden (jan/feb/nov/dec). Piekmaand juli krijgt een ring.</p>
+    </div>
+    <div class="p-3 bg-surface-alt rounded-md">
+      <div class="font-semibold mb-1">Bars in plantkleur</div>
+      <p class="text-surface-mute leading-snug">Elke bar gebruikt de bloeikleur van die soort. Wit voor Galanthus, paars voor Crocus en lavendel, geel voor Rudbeckia. Visueel zichtbaar welke kleur in welke maand domineert.</p>
+    </div>
+    <div class="p-3 bg-surface-alt rounded-md">
+      <div class="font-semibold mb-1">AI-voorstel onderaan</div>
+      <p class="text-surface-mute leading-snug">Lege rij in amber met "Voorstel: Helleborus" toont concreet wat een gat zou vullen. Geen abstract "score laag" — directe actie zichtbaar. Klik = naar Ontdek met die soort.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SCREEN 6: JOURNAL
+═══════════════════════════════════════════════════════════════════ -->
+<section id="journal" class="anchor mb-20">
+  <div class="mb-4 flex items-baseline gap-4">
+    <h2 class="text-2xl font-display font-bold">Journal</h2>
+    <span class="text-sm text-surface-mute">Tijdlijn van observaties, foto's en metingen — over alle planten heen</span>
+  </div>
+
+  <div class="screen-frame flex" style="height: 820px;">
+    <div class="mini-rail">
+      <div class="mini-rail-item"><i data-lucide="layout-dashboard"></i></div>
+      <div class="mini-rail-item"><i data-lucide="map"></i></div>
+      <div class="mini-rail-item"><i data-lucide="grid-3x3"></i></div>
+      <div class="mini-rail-item"><i data-lucide="leaf"></i></div>
+      <div class="mini-rail-item"><i data-lucide="compass"></i></div>
+      <div class="mini-rail-item"><i data-lucide="check-square"></i></div>
+      <div class="mini-rail-item"><i data-lucide="calendar"></i></div>
+      <div class="mini-rail-item active"><i data-lucide="book-open"></i></div>
+      <div class="mini-rail-item"><i data-lucide="sparkles"></i></div>
+    </div>
+
+    <div class="flex-1 flex flex-col min-w-0">
+      <header class="px-6 py-4 border-b border-surface-border bg-white flex items-center justify-between">
+        <div>
+          <h3 class="text-xl font-display font-bold leading-tight">Journal</h3>
+          <p class="text-xs text-surface-mute">347 observaties over 23 maanden · alle zones</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="relative">
+            <i data-lucide="search" style="width:14px;height:14px;" class="absolute left-3 top-1/2 -translate-y-1/2 text-surface-mute"></i>
+            <input class="bg-white border border-surface-border rounded-md py-1.5 pl-9 pr-3 text-sm w-64 outline-none focus:border-moss-500" placeholder="Zoek in journal..." />
+          </div>
+          <button class="px-3 py-1.5 rounded-md text-sm font-medium bg-moss-700 text-white hover:bg-moss-600 clickable flex items-center gap-1.5">
+            <i data-lucide="plus" style="width:14px;height:14px;"></i> Observatie
+          </button>
+        </div>
+      </header>
+
+      <div class="flex-1 flex min-h-0">
+        <!-- Left: filters + stats -->
+        <aside class="w-64 border-r border-surface-border bg-white p-5 overflow-y-auto flex-shrink-0 space-y-5">
+          <!-- Time filter -->
+          <div>
+            <div class="text-xs font-semibold text-surface-mute uppercase tracking-wider mb-2">Periode</div>
+            <div class="space-y-1">
+              <label class="flex items-center gap-2 cursor-pointer text-sm">
+                <input type="radio" name="period" checked class="accent-moss-700"> Deze week
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm">
+                <input type="radio" name="period" class="accent-moss-700"> Deze maand
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm">
+                <input type="radio" name="period" class="accent-moss-700"> Dit jaar
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm">
+                <input type="radio" name="period" class="accent-moss-700"> Vorig jaar
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm">
+                <input type="radio" name="period" class="accent-moss-700"> Aangepast...
+              </label>
+            </div>
+          </div>
+
+          <!-- Type filter -->
+          <div>
+            <div class="text-xs font-semibold text-surface-mute uppercase tracking-wider mb-2">Type</div>
+            <div class="space-y-1.5">
+              <label class="flex items-center gap-2 cursor-pointer text-sm">
+                <input type="checkbox" checked class="accent-moss-700">
+                <i data-lucide="camera" style="width:14px;height:14px;" class="text-moss-700"></i>
+                Foto's <span class="text-xs text-surface-mute ml-auto">142</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm">
+                <input type="checkbox" checked class="accent-moss-700">
+                <i data-lucide="bug" style="width:14px;height:14px;" class="text-rust-500"></i>
+                Plagen / ziektes <span class="text-xs text-surface-mute ml-auto">18</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm">
+                <input type="checkbox" checked class="accent-moss-700">
+                <i data-lucide="test-tube" style="width:14px;height:14px;" class="text-clay-700"></i>
+                Metingen <span class="text-xs text-surface-mute ml-auto">31</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm">
+                <input type="checkbox" checked class="accent-moss-700">
+                <i data-lucide="apple" style="width:14px;height:14px;" class="text-amber-700"></i>
+                Oogst <span class="text-xs text-surface-mute ml-auto">47</span>
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-sm">
+                <input type="checkbox" checked class="accent-moss-700">
+                <i data-lucide="message-square" style="width:14px;height:14px;" class="text-surface-mute"></i>
+                Notities <span class="text-xs text-surface-mute ml-auto">109</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Zone filter -->
+          <div>
+            <div class="text-xs font-semibold text-surface-mute uppercase tracking-wider mb-2">Zone</div>
+            <select class="w-full bg-white border border-surface-border rounded-md py-1.5 px-2 text-sm">
+              <option>Alle zones</option>
+              <option>Achterborder</option>
+              <option>Moestuin</option>
+              <option>Voortuin</option>
+              <option>Kruidenhoek</option>
+              <option>Serre</option>
+              <option>Vijverrand</option>
+            </select>
+          </div>
+
+          <!-- Weekly summary -->
+          <div class="pt-4 border-t border-surface-border">
+            <div class="text-xs font-semibold text-surface-mute uppercase tracking-wider mb-2">Deze week</div>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between"><span class="text-surface-mute">Foto's</span><span class="font-medium">7</span></div>
+              <div class="flex justify-between"><span class="text-surface-mute">Observaties</span><span class="font-medium">12</span></div>
+              <div class="flex justify-between"><span class="text-surface-mute">Oogst</span><span class="font-medium">3,4 kg</span></div>
+              <div class="flex justify-between"><span class="text-surface-mute">Aandacht</span><span class="font-medium text-amber-700">1</span></div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Timeline feed -->
+        <div class="flex-1 overflow-y-auto p-6 bg-surface-bg space-y-5">
+
+          <!-- Day group: Vandaag -->
+          <div>
+            <h4 class="text-xs font-semibold text-surface-mute uppercase tracking-wider mb-3">Vandaag · 23 mei</h4>
+
+            <div class="space-y-3">
+              <div class="bg-white rounded-lg shadow-sm p-4 flex gap-4">
+                <div class="w-20 h-20 rounded-md echinacea-thumb flex-shrink-0"></div>
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <i data-lucide="camera" style="width:14px;height:14px;" class="text-moss-700"></i>
+                    <span class="text-sm font-semibold scientific">Echinacea purpurea</span>
+                    <span class="text-xs text-surface-mute">· Achterborder</span>
+                    <span class="text-xs text-surface-mute ml-auto">09:42</span>
+                  </div>
+                  <p class="text-sm leading-relaxed">Eerste knoppen zichtbaar — twee weken vroeger dan vorig jaar. Bemesting in april lijkt verschil te maken.</p>
+                  <div class="flex items-center gap-2 mt-2 text-xs">
+                    <span class="px-2 py-0.5 rounded-full bg-moss-100 text-moss-700">Foto</span>
+                    <span class="px-2 py-0.5 rounded-full bg-bloom-100 text-bloom-700">Bloei begint</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg shadow-sm p-4 flex gap-4">
+                <div class="w-20 h-20 rounded-md bg-clay-400 bg-opacity-30 flex-shrink-0 flex items-center justify-center">
+                  <i data-lucide="test-tube" style="width:32px;height:32px;" class="text-clay-700"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <i data-lucide="test-tube" style="width:14px;height:14px;" class="text-clay-700"></i>
+                    <span class="text-sm font-semibold">pH-meting</span>
+                    <span class="text-xs text-surface-mute">· Moestuin</span>
+                    <span class="text-xs text-surface-mute ml-auto">08:15</span>
+                  </div>
+                  <p class="text-sm leading-relaxed">pH 6.4 (vorig: 6.7 in maart). Lichte daling. Misschien tijd voor kalkbemesting in herfst.</p>
+                  <div class="flex items-center gap-2 mt-2 text-xs">
+                    <span class="px-2 py-0.5 rounded-full bg-surface-alt">Meting</span>
+                    <span class="text-surface-mute">Trend: ▼ 0.3 sinds maart</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Day group: Gisteren -->
+          <div>
+            <h4 class="text-xs font-semibold text-surface-mute uppercase tracking-wider mb-3">Gisteren · 22 mei</h4>
+            <div class="space-y-3">
+              <div class="bg-white rounded-lg shadow-sm p-4 flex gap-4 border-l-4 border-rust-500">
+                <div class="w-20 h-20 rounded-md roos-thumb flex-shrink-0 relative">
+                  <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rust-500 flex items-center justify-center">
+                    <i data-lucide="alert-triangle" style="width:12px;height:12px;" class="text-white"></i>
+                  </span>
+                </div>
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <i data-lucide="bug" style="width:14px;height:14px;" class="text-rust-500"></i>
+                    <span class="text-sm font-semibold">Roest op rozenblad</span>
+                    <span class="text-xs text-surface-mute">· Roos 'Gertrude Jekyll' · Voortuin</span>
+                    <span class="text-xs text-surface-mute ml-auto">14:20</span>
+                  </div>
+                  <p class="text-sm leading-relaxed">Oranje-bruine vlekken aan onderkant van de bladeren. AI bevestigt: <span class="font-medium">Phragmidium mucronatum</span> (rozeroest, 87% zekerheid).</p>
+                  <div class="flex items-center gap-2 mt-2 text-xs">
+                    <span class="px-2 py-0.5 rounded-full bg-rust-100 text-rust-700">Plaag/ziekte</span>
+                    <span class="px-2 py-0.5 rounded-full bg-moss-100 text-moss-700">→ Behandelplan toegevoegd</span>
+                    <span class="source-chip ml-auto">via Velt</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg shadow-sm p-4 flex gap-4">
+                <div class="w-20 h-20 rounded-md flex-shrink-0" style="background:linear-gradient(135deg,#C66476 0%,#E89BA5 50%,#8A3D49 100%);"></div>
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <i data-lucide="apple" style="width:14px;height:14px;" class="text-amber-700"></i>
+                    <span class="text-sm font-semibold">Aardbeien geoogst</span>
+                    <span class="text-xs text-surface-mute">· Moestuin</span>
+                    <span class="text-xs text-surface-mute ml-auto">11:30</span>
+                  </div>
+                  <p class="text-sm leading-relaxed">1,2 kg eerste oogst van het seizoen. Variëteit 'Elsanta' presteert beter dan vorig jaar op deze datum.</p>
+                  <div class="flex items-center gap-2 mt-2 text-xs">
+                    <span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Oogst · 1,2 kg</span>
+                    <span class="text-surface-mute">Jaar-op-jaar: ▲ 0,3 kg</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Day group: 2 dagen geleden -->
+          <div>
+            <h4 class="text-xs font-semibold text-surface-mute uppercase tracking-wider mb-3">2 dagen geleden · 21 mei</h4>
+            <div class="space-y-3">
+              <div class="bg-white rounded-lg shadow-sm p-4 flex gap-4">
+                <div class="w-20 h-20 rounded-md tomaat-thumb flex-shrink-0"></div>
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <i data-lucide="message-square" style="width:14px;height:14px;" class="text-surface-mute"></i>
+                    <span class="text-sm font-semibold scientific">Tomaat 'San Marzano'</span>
+                    <span class="text-xs text-surface-mute">· Serre</span>
+                    <span class="text-xs text-surface-mute ml-auto">17:05</span>
+                  </div>
+                  <p class="text-sm leading-relaxed">Eerste dief uitgebroken. Plant ontwikkelt zich trager dan de andere drie — vermoedelijk minder licht in deze hoek. Verplaatsen na volgende oogst overwegen.</p>
+                </div>
+              </div>
+              <div class="bg-white rounded-lg shadow-sm p-4 flex gap-4">
+                <div class="w-20 h-20 rounded-md lavendel-thumb flex-shrink-0"></div>
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <i data-lucide="camera" style="width:14px;height:14px;" class="text-moss-700"></i>
+                    <span class="text-sm font-semibold scientific">Lavandula angustifolia</span>
+                    <span class="text-xs text-surface-mute">· Achterborder</span>
+                    <span class="text-xs text-surface-mute ml-auto">16:42</span>
+                  </div>
+                  <p class="text-sm leading-relaxed">Eén exemplaar duidelijk trager dan de andere twee. Vergeleken met foto van vorig jaar zelfde tijdstip — ja, dezelfde plant. Misschien wortelconcurrentie met salvia?</p>
+                  <div class="flex items-center gap-2 mt-2 text-xs">
+                    <span class="px-2 py-0.5 rounded-full bg-moss-100 text-moss-700">Foto · vergelijking</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 grid grid-cols-3 gap-4 text-sm">
+    <div class="p-3 bg-surface-alt rounded-md">
+      <div class="font-semibold mb-1">Eén feed, vijf types</div>
+      <p class="text-surface-mute leading-snug">Foto's, plagen-observaties, metingen, oogst-data, notities — allemaal in dezelfde tijdlijn. Filterbaar maar standaard alles zichtbaar, want de samenhang is vaak waardevol.</p>
+    </div>
+    <div class="p-3 bg-surface-alt rounded-md">
+      <div class="font-semibold mb-1">Trends in lijn met data</div>
+      <p class="text-surface-mute leading-snug">"Trend: ▼ 0.3 sinds maart" en "Jaar-op-jaar: ▲ 0,3 kg" verschijnen automatisch bij metingen en oogsten. Niet als aparte grafiek — gewoon inline waar de waarde staat.</p>
+    </div>
+    <div class="p-3 bg-surface-alt rounded-md">
+      <div class="font-semibold mb-1">Plaag-entries krijgen aandacht</div>
+      <p class="text-surface-mute leading-snug">Linker-rand in rust-rood voor ziekte-meldingen. AI-diagnose met confidence (87%) en bron (via Velt). "→ Behandelplan toegevoegd" toont dat de observatie ook een taak heeft aangemaakt.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="text-center text-xs text-surface-mute mt-12 mb-4 pt-8 border-t border-surface-border">
+  GroenPlan schermen showcase · v0.1 — gebaseerd op Design Brief v0.3 + Component Inventory + Mockup-frames
+</footer>
+
+</div>
+
+<script>
+  lucide.createIcons();
+
+  // Smooth scroll for anchor links
+  document.querySelectorAll('.showcase-nav a').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = document.querySelector(link.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+
+  // Update active nav link based on scroll position
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.showcase-nav a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        navLinks.forEach(link => {
+          link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, { rootMargin: '-50% 0px -50% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>

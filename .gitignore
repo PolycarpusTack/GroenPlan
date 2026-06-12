@@ -1,0 +1,28 @@
+node_modules/
+dist/
+.env
+.env.local
+.env*.local
+*.local
+
+# Vite
+.vite/
+
+# TypeScript
+*.tsbuildinfo
+
+# Scratch-artefacten (geen bron)
+extracted/
+files.zip
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
