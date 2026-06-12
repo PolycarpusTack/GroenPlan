@@ -12,6 +12,7 @@ import type { Zone } from "../domain/tuin/types";
 import type { AutoFillResultaat } from "../domain/plant/types";
 import { Button } from "./ui";
 import type { TuinOntwerpSuggestie, TuinOntwerpVoorstel } from "../services/tuinontwerp/types";
+import { schatKosten } from "../services/tuinontwerp/kosten";
 
 interface Props {
   zone: Zone;
@@ -32,10 +33,11 @@ const PRIORITEIT_STIJL: Record<TuinOntwerpSuggestie["prioriteit"], string> = {
   laag:   "border-l-[var(--gp-border)] bg-[var(--gp-surface-alt)] text-[var(--gp-text-mute)]",
 };
 
-function MetriekenBalk({ metrics }: { metrics: TuinOntwerpVoorstel["metrics"] }) {
+function MetriekenBalk({ metrics, aantalPlanten }: { metrics: TuinOntwerpVoorstel["metrics"]; aantalPlanten: number }) {
   const { bloeiDekking, companionConflicten, biodiversiteitScore } = metrics;
+  const kosten = schatKosten(aantalPlanten);
   return (
-    <div className="grid grid-cols-3 gap-2 text-center">
+    <div className={`grid gap-2 text-center ${kosten ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
       <div className="p-2 rounded-lg bg-moss-50 border border-moss-200">
         <div className="text-body-sm font-semibold text-moss-800">{bloeiDekking}/12</div>
         <div className="text-caption text-moss-600">Bloeidekking</div>
@@ -53,6 +55,15 @@ function MetriekenBalk({ metrics }: { metrics: TuinOntwerpVoorstel["metrics"] })
         <div className="text-body-sm font-semibold text-sky-800">{biodiversiteitScore}</div>
         <div className="text-caption text-sky-600">Biodiversiteit</div>
       </div>
+      {kosten && (
+        <div
+          className="p-2 rounded-lg bg-clay-50 border border-clay-200"
+          title="Ruwe schatting: gangbare vasteplanten-prijzen (€6–12 per plant), geen winkelprijs"
+        >
+          <div className="text-body-sm font-semibold text-clay-700">€{kosten.min}–{kosten.max}</div>
+          <div className="text-caption text-clay-600">Geschat (1 per soort)</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -92,7 +103,7 @@ function VoorstelKaart({ voorstel, index, totaal }: { voorstel: TuinOntwerpVoors
           <Users size={11} className="inline mr-1" aria-hidden />
           Indicatoren
         </p>
-        <MetriekenBalk metrics={voorstel.metrics} />
+        <MetriekenBalk metrics={voorstel.metrics} aantalPlanten={voorstel.plantenLijst.length} />
       </div>
 
       {/* Suggesties */}
